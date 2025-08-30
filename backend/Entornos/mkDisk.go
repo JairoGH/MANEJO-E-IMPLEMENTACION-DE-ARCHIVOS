@@ -1,10 +1,13 @@
 package Entornos
 
 import (
+	"backend/Particiones"
 	"backend/Utils"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 )
 
 func MKDisk(size int, fit string, unit string, path string) string {
@@ -54,6 +57,30 @@ func MKDisk(size int, fit string, unit string, path string) string {
 	if _, err := file.Write(zeroBlock); err != nil {
 		return fmt.Sprintf("  Error al escribir en el archivo: %s", err.Error())
 	}
+
+	// Crear MBR
+	var nuevoMBR Particiones.MBR
+	nuevoMBR.MBR_Tamano = int32(sizeInBytes)
+	nuevoMBR.MBR_DiskSig = rand.Int31()
+	copy(nuevoMBR.MBR_DiskFit[:], fit)
+
+	formattedDate := time.Now().Format("02/01/2006")
+	copy(nuevoMBR.MBR_FechaCr[:], formattedDate)
+
+	// Escribe MBR
+	if err := Utils.WriteFile(file, nuevoMBR, 0); err != nil {
+		return fmt.Sprintf("  Error al escribir el MBR: %s", err.Error())
+	}
+
+	// Leer MBR para verificación
+	var tempMBR Particiones.MBR
+	if err := Utils.ReadFile(file, &tempMBR, 0); err != nil {
+		return fmt.Sprintf("  Error al leer el MBR: %s", err.Error())
+	}
+
+	// Generar salida
+	output.WriteString("\n  MBR creado exitosamente:\n")
+	output.WriteString(Particiones.PrintMBR(tempMBR))
 
 	output.WriteString("|==============================================================|\n")
 	output.WriteString("|======================== FIN MKDISK ==========================|\n")

@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func fn_mkdisk(parametros string) string {
-	paramMap := ExtractParams(parametros)
+func fn_mkdisk(param string) string {
+	paramMap := ExtractParams(param)
 
 	var output strings.Builder
 
@@ -58,8 +58,8 @@ func fn_mkdisk(parametros string) string {
 	return output.String()
 }
 
-func fn_rmdisk(parametros string) string {
-	paramMap := ExtractParams(parametros)
+func fn_rmdisk(param string) string {
+	paramMap := ExtractParams(param)
 
 	var output strings.Builder
 
@@ -73,8 +73,8 @@ func fn_rmdisk(parametros string) string {
 	return output.String()
 }
 
-func fn_fdisk(parametros string) string {
-	paramMap := ExtractParams(parametros)
+func fn_fdisk(param string) string {
+	paramMap := ExtractParams(param)
 	var output strings.Builder
 
 	// Validar y procesar parámetros
@@ -125,5 +125,48 @@ func fn_fdisk(parametros string) string {
 
 	// Llamar a la función FDISK con los parámetros procesados
 	output.WriteString(Entornos.Fdisk(sizeInBytes, path, name, unit, partType, fit))
+	return output.String()
+}
+
+func fn_mount(param string) string {
+	var output strings.Builder
+	paramMap := ExtractParams(param)
+
+	path := strings.ToLower(paramMap["path"])
+	name := strings.ToLower(paramMap["name"])
+
+	if path == "" || name == "" {
+		return "Error: Path y Name son obligatorios"
+	}
+
+	// Llamar a la función Mount con los parámetros procesados
+	output.WriteString(Entornos.Mount(path, name))
+	return output.String()
+}
+
+// fn_mounted procesa el comando mounted.
+func fn_mounted(_ string) string {
+	var output strings.Builder
+	mountedPartitions := Entornos.GetMountedPartitions()
+
+	// Verificar si hay particiones montadas
+	if len(mountedPartitions) == 0 {
+		return "No hay Particiones Montadas."
+	}
+
+	// Mostrar los IDs de las particiones montadas
+	output.WriteString("|==================================================================================|\n")
+	output.WriteString("|=========================== PARTICIONES MONTADAS =================================|\n")
+	output.WriteString("|==================================================================================|\n")
+
+	for disk, partitions := range mountedPartitions {
+		output.WriteString(fmt.Sprintf("  Disco: %s\n", disk))
+		for _, partition := range partitions {
+			output.WriteString(fmt.Sprintf("    - ID: %s\n", partition.MountID))
+		}
+	}
+	output.WriteString("|=============================================================================|")
+	output.WriteString("|=========================== FIN PARTICIONES =================================|\n")
+	output.WriteString("|=============================================================================|")
 	return output.String()
 }
