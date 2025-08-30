@@ -46,10 +46,10 @@ func AnalyzerCommand(commands string, params string) string {
 		return result + fn_rmdisk(params)
 	case strings.Contains(commands, "fdisk"):
 		return result + fn_fdisk(params)
-	case strings.Contains(commands, "mount"):
-		return result + fn_mount(params)
 	case strings.Contains(commands, "mounted"):
 		return result + fn_mounted(params)
+	case strings.Contains(commands, "mount"):
+		return result + fn_mount(params)
 	case strings.Contains(commands, "rep"):
 		return result + fn_rep(params)
 	default:

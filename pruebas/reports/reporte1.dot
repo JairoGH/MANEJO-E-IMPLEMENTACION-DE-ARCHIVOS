@@ -1,0 +1,27 @@
+digraph G {
+	node [fillcolor=lightyellow style=filled]
+	rankdir=LR;
+	subgraph cluster_MBR {
+		color=lightblue fillcolor=aliceblue label="MBR Report" style=filled
+		mbr [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+			<tr><td colspan="2" bgcolor="cadetblue"><b>MBR Information</b></td></tr>
+			<tr><td><b>Tamaño</b></td><td>3072000</td></tr>
+			<tr><td><b>Fecha Creación</b></td><td>30/08/2025</td></tr>
+			<tr><td><b>Disk Signature</b></td><td>541048758</td></tr>
+			<tr><td colspan="2" bgcolor="lightgreen"><b>Partición 1</b></td></tr>
+			<tr><td><b>Status</b></td><td>1</td></tr>
+			<tr><td><b>Type</b></td><td>p</td></tr>
+			<tr><td><b>Fit</b></td><td>w</td></tr>
+			<tr><td><b>Start</b></td><td>168</td></tr>
+			<tr><td><b>Size</b></td><td>307200</td></tr>
+			<tr><td><b>Name</b></td><td>particion1</td></tr>
+			<tr><td colspan="2" bgcolor="lightgreen"><b>Partición 2</b></td></tr>
+			<tr><td><b>Status</b></td><td>1</td></tr>
+			<tr><td><b>Type</b></td><td>p</td></tr>
+			<tr><td><b>Fit</b></td><td>w</td></tr>
+			<tr><td><b>Start</b></td><td>307368</td></tr>
+			<tr><td><b>Size</b></td><td>307200</td></tr>
+			<tr><td><b>Name</b></td><td>particion2</td></tr>
+		</table>> shape=plaintext]
+	}
+}

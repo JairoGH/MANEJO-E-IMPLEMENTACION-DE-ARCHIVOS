@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// ===================== PÚBLICO =====================
+// ===================== PÚBLICO ====================
 
 func GenerarReporteMBR(diskPath, reportPath string) string {
 	var output strings.Builder
