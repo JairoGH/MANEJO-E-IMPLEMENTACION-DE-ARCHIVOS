@@ -50,6 +50,14 @@ func AnalyzerCommand(commands string, params string) string {
 		return result + fn_mounted(params)
 	case strings.Contains(commands, "mount"):
 		return result + fn_mount(params)
+	case strings.Contains(commands, "mkfs"):
+		return result + fn_mkfs(params)
+	case strings.Contains((commands), "cat"):
+		return result + fn_cat(params)
+	case strings.Contains(commands, "login"):
+		return result + fn_login(params)
+	case strings.Contains(commands, "logout"):
+		return result + fn_logout(params)
 	case strings.Contains(commands, "rep"):
 		return result + fn_rep(params)
 	default:
