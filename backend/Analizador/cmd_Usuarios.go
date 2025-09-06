@@ -41,3 +41,29 @@ func fn_logout(_ string) string {
 	output.WriteString(Usuarios.Logout())
 	return output.String()
 }
+
+// Parametro para Crear un Grupo
+func fn_mkgrp(parametros string) string {
+	var output strings.Builder
+	params := ExtractParams(parametros)
+	if name, ok := params["name"]; ok {
+
+		output.WriteString(Usuarios.MKGRP(name))
+	} else {
+		output.WriteString(" Error: Falta el parámetro -name")
+	}
+	return output.String()
+}
+
+// Parametro para Eliminar un Grupo
+func fn_rmgrp(parametros string) string {
+	var output strings.Builder
+	params := ExtractParams(parametros)
+	if name, ok := params["name"]; ok {
+
+		output.WriteString(Usuarios.RMGRP(name))
+	} else {
+		output.WriteString(" Error: Falta el parámetro -name ")
+	}
+	return output.String()
+}

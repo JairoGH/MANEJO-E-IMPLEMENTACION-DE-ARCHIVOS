@@ -58,6 +58,10 @@ func AnalyzerCommand(commands string, params string) string {
 		return result + fn_login(params)
 	case strings.Contains(commands, "logout"):
 		return result + fn_logout(params)
+	case strings.Contains(commands, "mkgrp"):
+		return result + fn_mkgrp(params)
+	case strings.Contains(commands, "rmgrp"):
+		return result + fn_rmgrp(params)
 	case strings.Contains(commands, "rep"):
 		return result + fn_rep(params)
 	default:
