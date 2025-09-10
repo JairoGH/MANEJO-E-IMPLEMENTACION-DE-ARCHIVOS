@@ -13,9 +13,9 @@ import (
 func MKDisk(size int, fit string, unit string, path string) string {
 	var output strings.Builder
 
-	output.WriteString("|============================================================|\n")
-	output.WriteString("|======================= INICIO MKDISK ======================|\n")
-	output.WriteString("|============================================================|\n")
+	output.WriteString(" ============================================================ \n")
+	output.WriteString(" ======================= INICIO MKDISK ====================== \n")
+	output.WriteString(" ============================================================ \n")
 	output.WriteString(fmt.Sprintf("  Size: %d\n  Fit: %s\n  Unit: %s\n  Path: %s\n", size, fit, unit, path))
 
 	// Validaciones
@@ -82,9 +82,9 @@ func MKDisk(size int, fit string, unit string, path string) string {
 	output.WriteString("\n  MBR creado exitosamente:\n")
 	output.WriteString(Particiones.PrintMBR(tempMBR))
 
-	output.WriteString("|==============================================================|\n")
-	output.WriteString("|======================== FIN MKDISK ==========================|\n")
-	output.WriteString("|==============================================================|\n")
+	output.WriteString(" ============================================================== \n")
+	output.WriteString(" ======================== FIN MKDISK ========================== \n")
+	output.WriteString(" ============================================================== \n")
 
 	return output.String()
 }

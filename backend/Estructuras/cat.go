@@ -13,14 +13,14 @@ import (
 // función principal del comando cat
 func Cat(params map[string]string) string {
 	var output strings.Builder
-	output.WriteString(" ============================================================================================================== \n")
-	output.WriteString(" ================================================= INICIO CAT ================================================= \n")
-	output.WriteString(" ============================================================================================================== \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ===================== INICIO CAT ======================= \n")
+	output.WriteString(" ========================================================= \n")
 
 	// 1. Verificar sesión activa
 	if !Usuarios.IsUserLoggedIn() {
-		output.WriteString("Error: No hay una sesión activa. Use 'login' primero.\n")
-		output.WriteString("================================================= FIN CAT ================================================= \n")
+		output.WriteString("Error: No hay una sesión activa. Use 'login' primero. \n")
+		output.WriteString(" ===================== FIN CAT ======================= \n")
 		return output.String()
 	}
 
@@ -28,7 +28,7 @@ func Cat(params map[string]string) string {
 	mountedPartition, found := getActiveMountedPartition()
 	if !found {
 		output.WriteString("Error: No se encontró la partición montada activa.\n")
-		output.WriteString(" ================================================= FIN CAT ================================================= \n")
+		output.WriteString(" ===================== FIN CAT ===================== \n")
 		return output.String()
 	}
 
@@ -36,7 +36,7 @@ func Cat(params map[string]string) string {
 	files := getFileParams(params)
 	if len(files) == 0 {
 		output.WriteString("Error: Se requiere al menos un parámetro -file.\n")
-		output.WriteString(" ================================================= FIN CAT ================================================= \n")
+		output.WriteString(" ===================== FIN CAT ===================== \n")
 		return output.String()
 	}
 
@@ -44,7 +44,7 @@ func Cat(params map[string]string) string {
 	file, err := Utils.OpenFile(mountedPartition.MountPath)
 	if err != nil {
 		output.WriteString(fmt.Sprintf("Error: No se pudo abrir el archivo: %v\n", err))
-		output.WriteString(" ================================================= FIN CAT ================================================= \n")
+		output.WriteString(" ===================== FIN CAT ===================== \n")
 		return output.String()
 	}
 	defer file.Close()
@@ -53,7 +53,7 @@ func Cat(params map[string]string) string {
 	var superblock Particiones.SuperBlock
 	if err := Utils.ReadFile(file, &superblock, int64(mountedPartition.MountStart)); err != nil {
 		output.WriteString(fmt.Sprintf("Error: No se pudo leer el Superblock: %v\n", err))
-		output.WriteString(" ================================================= FIN CAT ================================================= \n")
+		output.WriteString(" ===================== FIN CAT ===================== \n")
 		return output.String()
 	}
 
@@ -61,7 +61,7 @@ func Cat(params map[string]string) string {
 	currentUser := Usuarios.GetCurrentUser()
 	for i, filePath := range files {
 		output.WriteString(fmt.Sprintf("\n📄 Archivo %d: %s\n", i+1, filePath))
-		output.WriteString(" =========================================================================================================== \n")
+		output.WriteString(" ========================================== \n")
 
 		// Usar InitSearch para encontrar el archivo
 		inodeIndex, _ := Usuarios.InitSearch(filePath, file, superblock)
@@ -105,10 +105,10 @@ func Cat(params map[string]string) string {
 			output.WriteString("\n")
 		}
 
-		output.WriteString(" ======================================================================================================= \n")
+		output.WriteString(" ===================== \n")
 	}
 
-	output.WriteString(" ================================================= FIN CAT ================================================= \n")
+	output.WriteString(" ===================== FIN CAT ===================== \n")
 	return output.String()
 }
 

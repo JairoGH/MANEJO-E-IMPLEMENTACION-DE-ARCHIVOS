@@ -67,3 +67,55 @@ func fn_rmgrp(parametros string) string {
 	}
 	return output.String()
 }
+
+// Parametro para Crear un Usuario
+func fn_mkusr(parametros string) string {
+	var output strings.Builder
+	params := ExtractParams(parametros)
+
+	// Extraer los parámetros necesarios
+	user, userOk := params["user"]
+	pass, passOk := params["pass"]
+	grp, grpOk := params["grp"]
+
+	if !userOk || !passOk || !grpOk {
+		output.WriteString(" Error: Faltan parámetros. Se requieren -user, -pass y -grp ")
+		return output.String()
+	}
+
+	output.WriteString(Usuarios.MKUSR(user, pass, grp))
+	return output.String()
+}
+
+// Parametro para Eliminar un Usuario
+func fn_rmusr(parametros string) string {
+	var output strings.Builder
+	paramMap := ExtractParams(parametros)
+
+	// Validar que exista el parámetro obligatorio
+	user, userOK := paramMap["user"]
+
+	if !userOK {
+		return " Error: Falta el parámetro obligatorio (-user)"
+	}
+
+	output.WriteString(Usuarios.RMUSR(user))
+	return output.String()
+}
+
+// Parametro para Cambiar el Grupo de un Usuario
+func fn_chgrp(parametros string) string {
+	var output strings.Builder
+	paramMap := ExtractParams(parametros)
+
+	// Validar que existan los parámetros obligatorios
+	user, userOK := paramMap["user"]
+	grp, grpOK := paramMap["grp"]
+
+	if !userOK || !grpOK {
+		return " Error: Faltan los parámetros obligatorios (-user, -pass y -grp)"
+	}
+
+	output.WriteString(Usuarios.CHGRP(user, grp))
+	return output.String()
+}

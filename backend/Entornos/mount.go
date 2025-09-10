@@ -10,9 +10,9 @@ import (
 
 func Mount(path string, name string) string {
 	var output strings.Builder
-	output.WriteString("|============================================================|\n")
-	output.WriteString("|======================= INICIO MOUNT ======================|\n")
-	output.WriteString("|============================================================|\n")
+	output.WriteString(" ============================================================\n")
+	output.WriteString(" ======================= INICIO MOUNT =======================\n")
+	output.WriteString(" ============================================================\n")
 	file, err := Utils.OpenFile(path)
 	if err != nil {
 		return fmt.Sprintf("  Error: No se pudo abrir el archivo en la ruta: %s\n|======================= FIN MOUNT ======================|\n", path)

@@ -28,9 +28,9 @@ func markUsedInodesAndBlocks(newSuperblock Particiones.SuperBlock, file *os.File
 // Función para imprimir el Superblock
 func PrintSuperblock(sb Particiones.SuperBlock) string {
 	var output strings.Builder
-	output.WriteString(" ============================================================================================= \n")
-	output.WriteString(" ============================================== SUPERBLOCK   ================================= \n")
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ============================================================ \n")
+	output.WriteString(" ======================= SUPERBLOCK ========================= \n")
+	output.WriteString(" ============================================================ \n")
 	output.WriteString(fmt.Sprintf(" S_filesystem_type: %d\n", sb.S_filesystem_type))
 	output.WriteString(fmt.Sprintf(" S_inodes_count: %d\n", sb.S_inodes_count))
 	output.WriteString(fmt.Sprintf(" S_blocks_count: %d\n", sb.S_blocks_count))
@@ -48,6 +48,6 @@ func PrintSuperblock(sb Particiones.SuperBlock) string {
 	output.WriteString(fmt.Sprintf(" S_bm_block_start: %d\n", sb.S_bm_block_start))
 	output.WriteString(fmt.Sprintf(" S_inode_start: %d\n", sb.S_inode_start))
 	output.WriteString(fmt.Sprintf(" S_block_start: %d\n", sb.S_block_start))
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ============================================================ \n")
 	return output.String()
 }

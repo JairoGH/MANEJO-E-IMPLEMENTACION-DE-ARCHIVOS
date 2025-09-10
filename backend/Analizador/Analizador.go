@@ -62,6 +62,16 @@ func AnalyzerCommand(commands string, params string) string {
 		return result + fn_mkgrp(params)
 	case strings.Contains(commands, "rmgrp"):
 		return result + fn_rmgrp(params)
+	case strings.Contains(commands, "mkusr"):
+		return result + fn_mkusr(params)
+	case strings.Contains(commands, "rmusr"):
+		return result + fn_rmusr(params)
+	case strings.Contains(commands, "chgrp"):
+		return result + fn_chgrp(params)
+	case strings.Contains(commands, "mkfile"):
+		return result + fn_mkfile(params)
+	case strings.Contains(commands, "mkdir"):
+		return result + fn_mkdir(params)
 	case strings.Contains(commands, "rep"):
 		return result + fn_rep(params)
 	default:

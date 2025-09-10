@@ -155,9 +155,9 @@ func fn_mounted(_ string) string {
 	}
 
 	// Mostrar los IDs de las particiones montadas
-	output.WriteString("|==================================================================================|\n")
-	output.WriteString("|=========================== PARTICIONES MONTADAS =================================|\n")
-	output.WriteString("|==================================================================================|\n")
+	output.WriteString(" ==================================================================== \n")
+	output.WriteString(" ======================= PARTICIONES MONTADAS ======================= \n")
+	output.WriteString(" ==================================================================== \n")
 
 	for disk, partitions := range mountedPartitions {
 		output.WriteString(fmt.Sprintf("  Disco: %s\n", disk))
@@ -165,8 +165,8 @@ func fn_mounted(_ string) string {
 			output.WriteString(fmt.Sprintf("    - ID: %s\n", partition.MountID))
 		}
 	}
-	output.WriteString("|=============================================================================|")
-	output.WriteString("|=========================== FIN PARTICIONES =================================|\n")
-	output.WriteString("|=============================================================================|")
+	output.WriteString(" ==================================================================== \n")
+	output.WriteString(" ======================= FIN PARTICIONES ============================ \n")
+	output.WriteString(" ==================================================================== \n")
 	return output.String()
 }

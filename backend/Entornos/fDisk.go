@@ -11,9 +11,9 @@ import (
 func Fdisk(size int, path string, name string, unit string, type_ string, fit string) string {
 	// Validar si el archivo existe
 	var output strings.Builder
-	output.WriteString("|============================================================|\n")
-	output.WriteString("|======================= INICIO FDISK =======================|\n")
-	output.WriteString("|============================================================|\n")
+	output.WriteString(" ============================================================ \n")
+	output.WriteString(" ======================= INICIO FDISK ======================= \n")
+	output.WriteString(" ============================================================ \n")
 	output.WriteString(fmt.Sprintf("  Tamaño: %d \n", size))
 	output.WriteString(fmt.Sprintf("  Ruta: %s\n", path))
 	output.WriteString(fmt.Sprintf("  Nombre: %s\n", name))
@@ -53,7 +53,7 @@ func Fdisk(size int, path string, name string, unit string, type_ string, fit st
 	}
 	// Imprimir el objeto MBR
 	output.WriteString(Particiones.PrintMBR(TempMBR))
-	output.WriteString(" ====================================================================== \n")
+	output.WriteString(" ============================================================ \n")
 
 	// Validaciones de las particiones
 	var primaryCount, extendedCount, totalPartitions int
@@ -160,9 +160,9 @@ func Fdisk(size int, path string, name string, unit string, type_ string, fit st
 
 	// Imprimir el objeto MBR actualizado
 	output.WriteString(Particiones.PrintMBR(TempMBR2))
-	output.WriteString("|============================================================|\n")
-	output.WriteString("|======================= FINAL FDISK ========================|\n")
-	output.WriteString("|============================================================|\n")
+	output.WriteString(" ============================================================ \n")
+	output.WriteString(" ======================== FINAL FDISK ======================== \n")
+	output.WriteString(" ============================================================ \n")
 
 	return output.String()
 }

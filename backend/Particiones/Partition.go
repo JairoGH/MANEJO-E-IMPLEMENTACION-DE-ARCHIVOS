@@ -131,7 +131,7 @@ func PrintEBR(ebr EBR) string {
 // Funcion para Imprimir el Superblock
 func PrintSuperblock(sb SuperBlock) string {
 	var output strings.Builder
-	output.WriteString(" ==================================================== SUPERBLOCK ==========================")
+	output.WriteString(" ======================= SUPERBLOCK ==========================")
 	output.WriteString(fmt.Sprintf(" S_filesystem_type: %d\n", sb.S_filesystem_type))
 	output.WriteString(fmt.Sprintf(" S_inodes_count: %d\n", sb.S_inodes_count))
 	output.WriteString(fmt.Sprintf(" S_blocks_count: %d\n", sb.S_blocks_count))
@@ -149,7 +149,7 @@ func PrintSuperblock(sb SuperBlock) string {
 	output.WriteString(fmt.Sprintf(" S_bm_block_start: %d\n", sb.S_bm_block_start))
 	output.WriteString(fmt.Sprintf(" S_inode_start: %d\n", sb.S_inode_start))
 	output.WriteString(fmt.Sprintf(" S_block_start: %d\n", sb.S_block_start))
-	output.WriteString(" =========================================================================================")
+	output.WriteString(" ============================================================ ")
 	return output.String()
 }
 
@@ -157,7 +157,7 @@ func PrintSuperblock(sb SuperBlock) string {
 func PrintInode(inode Inode) string {
 	var output strings.Builder
 
-	output.WriteString(" ================================ INODO ==================================\n")
+	output.WriteString(" ======================= INODO ======================= \n")
 	output.WriteString(fmt.Sprintf(" I_uid: %d\n", inode.I_uid))
 	output.WriteString(fmt.Sprintf(" I_gid: %d\n", inode.I_gid))
 	output.WriteString(fmt.Sprintf(" I_size: %d\n", inode.I_size))
@@ -167,37 +167,37 @@ func PrintInode(inode Inode) string {
 	output.WriteString(fmt.Sprintf(" I_type: %s\n", string(inode.I_type[:])))
 	output.WriteString(fmt.Sprintf(" I_perm: %s\n", string(inode.I_perm[:])))
 	output.WriteString(fmt.Sprintf(" I_block: %v\n", inode.I_block))
-	output.WriteString(" ======================================================================\n")
+	output.WriteString(" ===================================================== \n")
 	return output.String()
 }
 
 // Funcion para Imprimir el Bloque de Carpeta
 func PrintFolderBlock(folderblock FolderBlock) string {
 	var output strings.Builder
-	output.WriteString(" ================================ BLOQUE DE CARPETA ==================================\n")
+	output.WriteString(" ======================= BLOQUE DE CARPETA =======================n")
 	for i, content := range folderblock.B_content {
 		output.WriteString(fmt.Sprintf(" Contenido [%d]: Nombre: %s, Inodo: %d\n", i, string(content.B_name[:]), content.B_inodo))
 	}
-	output.WriteString(" ======================================================================\n")
+	output.WriteString(" =============================================================== \n")
 	return output.String()
 }
 
 // Funcion para Imprimir Bloque de Archivos
 func PrintFileBlock(fileblock FileBlock) string {
 	var output strings.Builder
-	output.WriteString(" ================================ BLOQUE DE ARCHIVOS ==================================\n")
+	output.WriteString(" ======================= BLOQUE DE ARCHIVOS ======================= \n")
 	output.WriteString(fmt.Sprintf(" B_Content: %s\n", string(fileblock.B_content[:])))
-	output.WriteString(" ======================================================================================\n")
+	output.WriteString(" =================================================================  \n")
 	return output.String()
 }
 
 // Funcion para Imprimir Bloque de Apuntadores
 func PrintBlockPointer(blockpointer BlockPointer) string {
 	var output strings.Builder
-	output.WriteString(" ================================ BLOQUE DE APUNTADORES ==================================\n")
+	output.WriteString(" ======================= BLOQUE DE APUNTADORES ======================= \n")
 	for i, pointer := range blockpointer.B_pointer {
 		output.WriteString(fmt.Sprintf(" Pointer [%d]: %d\n", i, pointer))
 	}
-	output.WriteString(" ======================================================================================\n")
+	output.WriteString(" =================================================================== \n")
 	return output.String()
 }

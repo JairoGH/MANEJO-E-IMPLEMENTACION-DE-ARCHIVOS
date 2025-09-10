@@ -11,9 +11,9 @@ import (
 
 func InitSearch(path string, file *os.File, tempSuperblock Particiones.SuperBlock) (int32, string) {
 	var output strings.Builder
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" ==============================================  BUSQUEDA INICIAL  ============================================== \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================================== \n")
+	output.WriteString(" ==============================================  BUSQUEDA INICIAL  ============================ \n")
+	output.WriteString(" ============================================================================================== \n")
 
 	output.WriteString(fmt.Sprintf("  path: %s\n", path))
 
@@ -32,9 +32,9 @@ func InitSearch(path string, file *os.File, tempSuperblock Particiones.SuperBloc
 		output.WriteString(fmt.Sprintf(" Error al leer el inodo raíz: %v\n", err))
 		return -1, output.String()
 	}
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================  FIN BUSQUEDA   ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ======================== FIN BUSQUEDA ============================================= \n")
+	output.WriteString(" ============================================================================== \n")
 
 	// Llamar a la función que busca el inodo del archivo según la ruta
 	inode, searchLog := SearchInodeByPath(StepsPath, Inode0, file, tempSuperblock)
@@ -53,16 +53,16 @@ func pop(s *[]string) string {
 
 func SearchInodeByPath(StepsPath []string, Inode Particiones.Inode, file *os.File, tempSuperblock Particiones.SuperBlock) (int32, string) {
 	var output strings.Builder
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================  BUSQUEDA INODO POR PATH   ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ============================= BUSQUEDA INODO POR PATH ======================== \n")
+	output.WriteString(" ============================================================================== \n")
 
 	index := int32(0)
 
 	// Extrae el primer elemento del path y elimina espacios en blanco
 	SearchedName := strings.Replace(pop(&StepsPath), " ", "", -1)
 
-	output.WriteString(fmt.Sprintf(" ======================= SearchedName: %s\n", SearchedName))
+	output.WriteString(fmt.Sprintf(" ===>>> SearchedName: %s\n", SearchedName))
 
 	// Iterar sobre los bloques del inodo
 	for _, block := range Inode.I_block {
@@ -78,17 +78,17 @@ func SearchInodeByPath(StepsPath []string, Inode Particiones.Inode, file *os.Fil
 
 				// Buscar el archivo/directorio dentro del bloque de carpeta
 				for _, folder := range crrFolderBlock.B_content {
-					output.WriteString(fmt.Sprintf(" ======================= Folder Name: %s, B_inodo: %d\n", string(folder.B_name[:]), folder.B_inodo))
+					output.WriteString(fmt.Sprintf(" ===>>> Folder Name: %s, B_inodo: %d\n", string(folder.B_name[:]), folder.B_inodo))
 
 					// Si el nombre del archivo o directorio coincide
 					if strings.Contains(string(folder.B_name[:]), SearchedName) {
 						output.WriteString(fmt.Sprintf("\tlen(StepsPath): %d, StepsPath: %v\n", len(StepsPath), StepsPath))
 
 						if len(StepsPath) == 0 {
-							output.WriteString(" ======================= Folder found ======================= \n")
+							output.WriteString(" ============= Folder found ============= \n")
 							return folder.B_inodo, output.String()
 						} else {
-							output.WriteString(" ======================= NextInode ======================= \n")
+							output.WriteString(" ============= NextInode ============= \n")
 							var NextInode Particiones.Inode
 
 							if err := Utils.ReadFile(file, &NextInode, int64(tempSuperblock.S_inode_start+folder.B_inodo*int32(binary.Size(Particiones.Inode{})))); err != nil {
@@ -107,9 +107,9 @@ func SearchInodeByPath(StepsPath []string, Inode Particiones.Inode, file *os.Fil
 		}
 		index++
 	}
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================  FIN BUSQUEDA INODO POR PATH   ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ======================== FIN BUSQUEDA INODO POR PATH ============================ \n")
+	output.WriteString(" ============================================================================== \n")
 	return 0, output.String()
 }
 
@@ -118,9 +118,9 @@ func GetInodeFileData(Inode Particiones.Inode, file *os.File, tempSuperblock Par
 	var output strings.Builder
 	var content string
 
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================  CONTENIDO DEL BLOQUE   ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ========================== CONTENIDO DEL BLOQUE ============================== \n")
+	output.WriteString(" ============================================================================== \n")
 
 	index := int32(0)
 	processedBlocks := make(map[int32]bool) // Mapa para rastrear bloques procesados
@@ -158,17 +158,17 @@ func GetInodeFileData(Inode Particiones.Inode, file *os.File, tempSuperblock Par
 		}
 		index++
 	}
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================  FIN CONTENIDO DEL BLOQUE   ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ============================= FIN CONTENIDO DEL BLOQUE ======================= \n")
+	output.WriteString(" ============================================================================== \n")
 	return content, output.String()
 }
 
 func AppendToFileBlock(inode *Particiones.Inode, newData string, file *os.File, superblock Particiones.SuperBlock) (error, string) {
 	var output strings.Builder
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" =============================================   AGREGAR AL BLOQUE    ============================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ========================== AGREGAR AL BLOQUE ========================== \n")
+	output.WriteString(" ============================================================================== \n")
 
 	// Obtener el contenido actual del archivo
 	existingData, log := GetInodeFileData(*inode, file, superblock)
@@ -263,9 +263,9 @@ func AppendToFileBlock(inode *Particiones.Inode, newData string, file *os.File, 
 		return err, output.String()
 	}
 
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" ==================================   FIN AGREGAR AL BLOQUE   ======================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" ============================== FIN AGREGAR AL BLOQUE ============================== \n")
+	output.WriteString(" ============================================================================== \n")
 
 	return nil, output.String()
 }
@@ -274,9 +274,9 @@ func findFreeBlock(file *os.File, superblock Particiones.SuperBlock) (int32, str
 	var output strings.Builder
 	var blockBitmap []byte = make([]byte, superblock.S_blocks_count)
 
-	output.WriteString(" ================================================================================================================ \n")
-	output.WriteString(" ==================================   BUSCANDO BLOQUE LIBRE   ======================================= \n")
-	output.WriteString(" ================================================================================================================ \n")
+	output.WriteString(" ============================================================================== \n")
+	output.WriteString(" =========================== BUSCANDO BLOQUE LIBRE ============================ \n")
+	output.WriteString(" ============================================================================== \n")
 
 	// Leer el bitmap de bloques
 	if err := Utils.ReadFile(file, &blockBitmap, int64(superblock.S_bm_block_start)); err != nil {

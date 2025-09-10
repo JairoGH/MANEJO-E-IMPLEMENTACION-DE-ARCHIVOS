@@ -29,9 +29,9 @@ func GetInodeFileData(inode Particiones.Inode, file *os.File, superblock Partici
 	var output strings.Builder
 	var content string
 
-	output.WriteString(" ============================================================================================= \n")
-	output.WriteString(" ==================================  CONTENIDO DEL BLOQUE   ================================== \n")
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ================== CONTENIDO DEL BLOQUE ================= \n")
+	output.WriteString(" ========================================================= \n")
 	index := int32(0)
 
 	// Iterar sobre los bloques del inodo
@@ -57,17 +57,17 @@ func GetInodeFileData(inode Particiones.Inode, file *os.File, superblock Partici
 		index++
 	}
 
-	output.WriteString(" ============================================================================================= \n")
-	output.WriteString(" ==================================  FIN CONTENIDO DEL BLOQUE  =============================== \n")
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ================ FIN CONTENIDO DEL BLOQUE =============== \n")
+	output.WriteString(" ========================================================= \n")
 	return content, output.String()
 }
 
 func PrintInode(inode Particiones.Inode) string {
 	var output strings.Builder
-	output.WriteString(" ============================================================================================= \n")
-	output.WriteString(" =====================================   INODE   ============================================= \n")
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ======================== INODE ========================== \n")
+	output.WriteString(" ========================================================= \n")
 	output.WriteString(fmt.Sprintf(" I_uid: %d\n", inode.I_uid))
 	output.WriteString(fmt.Sprintf(" I_gid: %d\n", inode.I_gid))
 	output.WriteString(fmt.Sprintf(" I_size: %d\n", inode.I_size))
@@ -77,6 +77,6 @@ func PrintInode(inode Particiones.Inode) string {
 	output.WriteString(fmt.Sprintf(" I_type: %s\n", string(inode.I_type[:])))
 	output.WriteString(fmt.Sprintf(" I_perm: %s\n", string(inode.I_perm[:])))
 	output.WriteString(fmt.Sprintf(" I_block: %v\n", inode.I_block))
-	output.WriteString(" ============================================================================================= \n")
+	output.WriteString(" ========================================================= \n")
 	return output.String()
 }

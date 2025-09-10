@@ -14,9 +14,9 @@ import (
 
 func Mkfs(id string, type_ string, fs_ string) string {
 	var output strings.Builder
-	output.WriteString(" ================================================================================================== \n")
-	output.WriteString("========================================== INICIO MKFS   ========================================== \n")
-	output.WriteString(" ================================================================================================== \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ======================= INICIO MKFS ===================== \n")
+	output.WriteString(" ========================================================= \n")
 	output.WriteString(fmt.Sprintf("  Id: %s\n", id))
 	output.WriteString(fmt.Sprintf("  Type: %s\n", type_))
 	output.WriteString(fmt.Sprintf("  Fs: %s\n", fs_))
@@ -120,15 +120,15 @@ func Mkfs(id string, type_ string, fs_ string) string {
 
 	defer file.Close()
 
-	output.WriteString(" ================================================================================================================== \n")
-	output.WriteString(" ==================================================   FIN MKFS   ================================================== \n")
-	output.WriteString(" ================================================================================================================== \n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ======================= FIN MKFS ======================= \n")
+	output.WriteString(" ========================================================= \n")
 	return output.String()
 }
 
 // Función para leer y mostrar el contenido de users.txt
 func PrintUsersTxt(file *os.File, tempSuperblock Particiones.SuperBlock) {
-	fmt.Println("====================================================== Contenido de users.txt ===============================================")
+	fmt.Println(" ======================= Contenido de users.txt ======================= ")
 
 	// Buscar el archivo "users.txt" en el sistema de archivos
 	indexInode, log := Usuarios.InitSearch("/users.txt", file, tempSuperblock)
@@ -154,6 +154,6 @@ func PrintUsersTxt(file *os.File, tempSuperblock Particiones.SuperBlock) {
 
 	// Mostrar el contenido de users.txt
 	fmt.Println(data)
-	fmt.Println(" ==================================================== Fin del contenido de users.txt ====================================================")
+	fmt.Println(" ======================= Fin del contenido de users.txt ======================= ")
 
 }

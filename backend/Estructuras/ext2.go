@@ -12,9 +12,9 @@ import (
 // Función auxiliar para crear el sistema de archivos EXT2
 func create_ext2(n int32, partition Particiones.Partition, newSuperblock Particiones.SuperBlock, date string, file *os.File) string {
 	var output strings.Builder
-	output.WriteString("|============================================================================|\n")
-	output.WriteString("|==============================  CREANDO EXT2 ===============================|\n")
-	output.WriteString("|============================================================================|\n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" =====================  CREANDO EXT2 ===================== \n")
+	output.WriteString(" ========================================================= \n")
 	output.WriteString(fmt.Sprintf("  INODOS: %d \n", n))
 
 	// Imprimir el Superblock calculado
@@ -56,9 +56,9 @@ func create_ext2(n int32, partition Particiones.Partition, newSuperblock Partici
 	}
 
 	// Leer e imprimir los inodos después de formatear
-	output.WriteString("|===================================================================================|\n")
-	output.WriteString("|==============================  IMPRIMIENDO INODOS  ===============================|\n")
-	output.WriteString("|===================================================================================|\n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ================  IMPRIMIENDO INODOS  ================== \n")
+	output.WriteString(" ========================================================= \n")
 	for i := int32(0); i < n; i++ {
 		var inode Particiones.Inode
 		offset := int64(newSuperblock.S_inode_start + i*int32(binary.Size(Particiones.Inode{})))
@@ -69,9 +69,9 @@ func create_ext2(n int32, partition Particiones.Partition, newSuperblock Partici
 	}
 
 	// Leer e imprimir los Folderblocks y Fileblocks
-	output.WriteString("|===================================================================================|\n")
-	output.WriteString("|===========================  FOLDERBLOCKS Y FILEBLOCKS  ===========================|\n")
-	output.WriteString("|===================================================================================|\n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" ==============  FOLDERBLOCKS Y FILEBLOCKS  ============== \n")
+	output.WriteString(" ========================================================= \n")
 
 	// Imprimir Folderblocks
 	for i := int32(0); i < 1; i++ {
@@ -95,9 +95,9 @@ func create_ext2(n int32, partition Particiones.Partition, newSuperblock Partici
 
 	// Imprimir el Superblock final
 	output.WriteString(Particiones.PrintSuperblock(newSuperblock))
-	output.WriteString("|===================================================================================|\n")
-	output.WriteString("|===============================  FINALIZANDO EXT2  ================================|\n")
-	output.WriteString("|===================================================================================|\n")
+	output.WriteString(" ========================================================= \n")
+	output.WriteString(" =================  FINALIZANDO EXT2  ==================== \n")
+	output.WriteString(" ========================================================= \n")
 	return output.String()
 }
 
