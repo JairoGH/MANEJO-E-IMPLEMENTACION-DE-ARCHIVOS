@@ -74,6 +74,8 @@ func AnalyzerCommand(commands string, params string) string {
 		return result + fn_mkdir(params)
 	case strings.Contains(commands, "rep"):
 		return result + fn_rep(params)
+	case strings.Contains(commands, "inodos"):
+		return result + fn_inodos(params)
 	default:
 		return result + "Error: Comando inválido o no encontrado"
 	}

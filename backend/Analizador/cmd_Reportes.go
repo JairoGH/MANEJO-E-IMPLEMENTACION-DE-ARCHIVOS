@@ -78,13 +78,13 @@ func fn_rep(input string) string {
 	case "inode":
 		output.WriteString(Reportes.GenerarReporteInodo(*pathFileLs, *path, *id))
 	case "tree":
-		//output.WriteString(Reportes.GenerarReporteArbol(diskPath, *path, *id))
+		output.WriteString(Reportes.GenerarReporteArbol(diskPath, *path, *id))
 	case "block":
-		//output.WriteString(Reportes.GenerarReporteBloques(*pathFileLs, *path, *id))
+		output.WriteString(Reportes.GenerarReporteBloques(*pathFileLs, *path, *id))
 	case "ls":
 		//output.WriteString(Reportes.GenerarReporteLS(*pathFileLs, *path, *id))
 	case "bm_inode":
-		//output.WriteString(Reportes.GenerarReporteBitmapInodos(*path, *id))
+		output.WriteString(Reportes.GenerarReporteBitmapInodos(*path, *id))
 	case "bm_bloc":
 		//output.WriteString(Reportes.GenerarReporteBitmapBloques(*path, *id))
 	default:
