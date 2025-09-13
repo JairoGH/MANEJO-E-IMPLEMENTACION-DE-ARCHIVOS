@@ -82,11 +82,11 @@ func fn_rep(input string) string {
 	case "block":
 		output.WriteString(Reportes.GenerarReporteBloques(*pathFileLs, *path, *id))
 	case "ls":
-		//output.WriteString(Reportes.GenerarReporteLS(*pathFileLs, *path, *id))
+		output.WriteString(Reportes.GenerarReporteLS(*pathFileLs, *path, *id))
 	case "bm_inode":
 		output.WriteString(Reportes.GenerarReporteBitmapInodos(*path, *id))
 	case "bm_bloc":
-		//output.WriteString(Reportes.GenerarReporteBitmapBloques(*path, *id))
+		output.WriteString(Reportes.GenerarReporteBitmapBloques(*path, *id))
 	default:
 		output.WriteString("❌ Error: Tipo de reporte no válido.\n")
 	}
