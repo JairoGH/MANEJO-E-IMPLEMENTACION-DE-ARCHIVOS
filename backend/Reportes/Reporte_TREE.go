@@ -12,303 +12,190 @@ import (
 	"strings"
 )
 
-// GenerarReporteArbol genera un reporte visual del árbol de inodos y bloques
+// GenerarReporteArbol genera un reporte visual del árbol de directorios y archivos.
 func GenerarReporteArbol(diskPath, reportPath, id string) string {
 	var output strings.Builder
-	fmt.Printf("🔍 Depuración: Iniciando generación de reporte de árbol para ID: %s\n", id)
 
-	// Abrir el archivo binario del disco montado
-	file, err := Utils.OpenFile(diskPath)
+	// --- 1. Obtener Partición y Validar ---
+	mountedPartition, found := Entornos.GetMountedPartitionByID(id)
+	if !found {
+		return fmt.Sprintf("Error: No se encontró la partición montada con ID %s", id)
+	}
+
+	file, err := Utils.OpenFile(mountedPartition.MountPath)
 	if err != nil {
-		fmt.Printf("❌ Error al abrir el archivo: %v\n", err)
-		return fmt.Sprintf("Error: No se pudo abrir el archivo en la ruta: %s", diskPath)
+		return fmt.Sprintf("Error: No se pudo abrir el disco en la ruta: %s", mountedPartition.MountPath)
 	}
 	defer file.Close()
-	fmt.Println("✅ Archivo abierto correctamente.")
 
-	// Obtener la partición montada
-	var partitionStart int64
-	partitionFound := false
-	for _, partitions := range Entornos.GetMountedPartitions() {
-		for _, partition := range partitions {
-			if partition.MountID == id {
-				partitionStart = int64(partition.MountStart)
-				partitionFound = true
-				fmt.Printf("✅ Partición encontrada: MountStart = %d\n", partitionStart)
-				break
-			}
-		}
-		if partitionFound {
-			break
-		}
-	}
-
-	if !partitionFound {
-		fmt.Printf("❌ Error: No se encontró la partición con ID: %s\n", id)
-		return fmt.Sprintf("Error: No se encontró la partición con ID: %s", id)
-	}
-
-	// Leer el superbloque
 	var superblock Particiones.SuperBlock
-	if err := Utils.ReadFile(file, &superblock, partitionStart); err != nil {
-		fmt.Printf("❌ Error al leer el superbloque: %v\n", err)
-		return fmt.Sprintf("Error al leer superbloque: %v", err)
-	}
-	fmt.Printf("✅ Superbloque leído correctamente: S_filesystem_type = %d\n", superblock.S_filesystem_type)
-
-	// Validar que es un sistema de archivos válido
-	if superblock.S_filesystem_type == 0 {
-		fmt.Println("❌ Error: El sistema de archivos no está formateado.")
-		return "Error: El sistema de archivos no está formateado"
+	if err := Utils.ReadFile(file, &superblock, int64(mountedPartition.MountStart)); err != nil {
+		return fmt.Sprintf("Error al leer el superbloque: %v", err)
 	}
 
-	// Crear el archivo DOT para el árbol
-	dotContent := &strings.Builder{}
-	dotContent.WriteString("digraph G {\n")
-	dotContent.WriteString("  rankdir=\"LR\";\n")
-	dotContent.WriteString("  node [shape=record, fontname=\"Arial\", fontsize=10];\n\n")
-
-	// Mapa para evitar procesar el mismo inodo múltiples veces
-	processedInodes := make(map[int32]bool)
-
-	// Procesar el inodo raíz (generalmente inodo 0)
-	fmt.Println("🔍 Depuración: Procesando inodo raíz (Inodo 0).")
-	if err := processInodeForTree(0, file, superblock, dotContent, processedInodes); err != nil {
-		fmt.Printf("❌ Error al procesar inodo raíz: %v\n", err)
-		return fmt.Sprintf("Error al procesar inodo raíz: %v", err)
+	if superblock.S_magic != 0xEF53 {
+		return "Error: La partición no parece tener un sistema de archivos EXT2 válido (magic number incorrecto)."
 	}
 
-	dotContent.WriteString("}\n")
+	// --- 2. Preparar Generador de DOT ---
+	var nodesDot, edgesDot strings.Builder
+	nodesDot.WriteString("digraph G {\n")
+	nodesDot.WriteString("  rankdir=\"LR\";\n")
+	nodesDot.WriteString("  node [shape=plaintext, fontname=\"Arial\"];\n\n")
 
-	// Depuración: Imprimir el contenido del archivo DOT generado
-	fmt.Println("🔍 Depuración: Contenido del archivo DOT generado:")
-	fmt.Println(dotContent.String())
+	processed := make(map[string]bool) // Para evitar procesar elementos múltiples veces
 
-	// Crear directorio si no existe
+	// --- 3. Iniciar Recorrido Recursivo desde el Inodo Raíz (0) ---
+	if err := processInode(0, file, superblock, &nodesDot, &edgesDot, processed); err != nil {
+		return fmt.Sprintf("Error al generar el árbol de archivos: %v", err)
+	}
+
+	// --- 4. Combinar Nodos y Conexiones y Finalizar DOT ---
+	nodesDot.WriteString(edgesDot.String())
+	nodesDot.WriteString("}\n")
+
+	// --- 5. Guardar Archivo .dot y Generar Imagen ---
 	if err := os.MkdirAll(filepath.Dir(reportPath), 0755); err != nil {
-		fmt.Printf("❌ Error al crear directorio: %v\n", err)
-		return fmt.Sprintf("Error al crear directorio: %v", err)
+		return fmt.Sprintf("Error al crear el directorio de salida: %v", err)
 	}
-	fmt.Println("✅ Directorio creado correctamente.")
 
-	// Guardar contenido DOT
 	dotFile := strings.TrimSuffix(reportPath, filepath.Ext(reportPath)) + ".dot"
-	if err := os.WriteFile(dotFile, []byte(dotContent.String()), 0644); err != nil {
-		fmt.Printf("❌ Error al guardar el archivo DOT: %v\n", err)
+	if err := os.WriteFile(dotFile, []byte(nodesDot.String()), 0644); err != nil {
 		return fmt.Sprintf("Error al guardar el archivo DOT: %v", err)
 	}
-	fmt.Printf("✅ Archivo DOT guardado correctamente: %s\n", dotFile)
 
-	// Convertir el archivo DOT en imagen con Graphviz
 	cmd := exec.Command("dot", "-Tjpg", dotFile, "-o", reportPath)
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("❌ Error al convertir el archivo DOT a imagen: %v\n", err)
-		output.WriteString(fmt.Sprintf("Error al convertir el archivo DOT a imagen: %v", err))
-		return output.String()
+		return fmt.Sprintf("Advertencia: No se pudo generar la imagen con Graphviz: %v. El archivo .dot fue guardado en %s", err, dotFile)
 	}
-	fmt.Printf("✅ Imagen generada correctamente: %s\n", reportPath)
-	output.WriteString(fmt.Sprintf("Reporte de árbol generado exitosamente en: %s", reportPath))
 
+	output.WriteString(fmt.Sprintf("Reporte de árbol generado exitosamente en: %s", reportPath))
 	return output.String()
 }
 
-func processInodeForTree(inodeIndex int32, file *os.File, sb Particiones.SuperBlock, dot *strings.Builder, processedInodes map[int32]bool) error {
-	fmt.Printf("🔍 Depuración: Procesando inodo %d\n", inodeIndex)
-
-	// Verificar si ya fue procesado para evitar bucles infinitos
-	if processedInodes[inodeIndex] {
-		fmt.Printf("⚠️ Inodo %d ya fue procesado, saltando...\n", inodeIndex)
+// processInode lee un inodo, lo dibuja en el grafo y procesa sus bloques asociados.
+func processInode(inodeIndex int32, file *os.File, sb Particiones.SuperBlock, nodes *strings.Builder, edges *strings.Builder, processed map[string]bool) error {
+	inodeID := fmt.Sprintf("inode_%d", inodeIndex)
+	if processed[inodeID] {
 		return nil
 	}
-	processedInodes[inodeIndex] = true
+	processed[inodeID] = true
 
-	// Validar que el inodo esté dentro del rango válido
-	if inodeIndex < 0 || inodeIndex >= sb.S_inodes_count {
-		fmt.Printf("❌ Error: Índice de inodo %d fuera de rango\n", inodeIndex)
-		return fmt.Errorf("índice de inodo %d fuera de rango", inodeIndex)
-	}
-
-	// Calcular posición del inodo
-	inodePos := sb.S_inode_start + inodeIndex*int32(binary.Size(Particiones.Inode{}))
-	fmt.Printf("🔍 Depuración: Posición del inodo %d = %d\n", inodeIndex, inodePos)
-
-	// Leer el inodo
 	var inode Particiones.Inode
+	inodePos := sb.S_inode_start + inodeIndex*int32(binary.Size(Particiones.Inode{}))
 	if err := Utils.ReadFile(file, &inode, int64(inodePos)); err != nil {
-		fmt.Printf("❌ Error al leer inodo %d: %v\n", inodeIndex, err)
-		return fmt.Errorf("error al leer inodo %d: %v", inodeIndex, err)
+		return fmt.Errorf("no se pudo leer el inodo %d: %v", inodeIndex, err)
 	}
 
-	// Limpiar el tipo de inodo (eliminar caracteres nulos)
-	inodeType := strings.TrimRight(string(inode.I_type[:]), "\x00")
-	fmt.Printf("✅ Inodo %d leído correctamente: Tipo = '%s', Tamaño = %d\n",
-		inodeIndex, inodeType, inode.I_size)
-
-	// Crear nodo para el inodo con mejor formateo
-	var inodeLabel string
-	if inodeType == "0" {
-		inodeLabel = fmt.Sprintf("  inode%d [label=\"Inodo %d|Tipo: Directorio|Tamaño: %d bytes|Permisos: %d",
-			inodeIndex, inodeIndex, inode.I_size, inode.I_perm)
-	} else if inodeType == "1" {
-		inodeLabel = fmt.Sprintf("  inode%d [label=\"Inodo %d|Tipo: Archivo|Tamaño: %d bytes|Permisos: %d",
-			inodeIndex, inodeIndex, inode.I_size, inode.I_perm)
-	} else {
-		inodeLabel = fmt.Sprintf("  inode%d [label=\"Inodo %d|Tipo: %s|Tamaño: %d bytes|Permisos: %d",
-			inodeIndex, inodeIndex, inodeType, inode.I_size, inode.I_perm)
+	isDir := inode.I_type[0] == '0'
+	nodeType := "Archivo"
+	nodeColor := "#FFDDC1" // Color para archivo
+	if isDir {
+		nodeType = "Directorio"
+		nodeColor = "#BDE0FE" // Color para directorio
 	}
+	permStr := strings.TrimRight(string(inode.I_perm[:]), "\x00")
 
-	// Agregar referencias a bloques
+	// Dibuja el nodo del inodo como una tabla HTML
+	var inodeLabel strings.Builder
+	inodeLabel.WriteString(fmt.Sprintf(`%s [label=<`, inodeID))
+	inodeLabel.WriteString(fmt.Sprintf(`<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="%s">`, nodeColor))
+	inodeLabel.WriteString(fmt.Sprintf(`<TR><TD COLSPAN="2"><B>Inodo %d (%s)</B></TD></TR>`, inodeIndex, nodeType))
+	inodeLabel.WriteString(fmt.Sprintf(`<TR><TD>Permisos</TD><TD>%s</TD></TR>`, permStr))
+	inodeLabel.WriteString(fmt.Sprintf(`<TR><TD>Tamaño</TD><TD>%d bytes</TD></TR>`, inode.I_size))
+
 	for i, blockIndex := range inode.I_block {
-		if blockIndex != -1 {
-			inodeLabel += fmt.Sprintf("|<b%d> Bloque[%d]: %d", i, i, blockIndex)
-		}
-	}
-	inodeLabel += "\"];\n\n"
-	dot.WriteString(inodeLabel)
+		if i < 12 && blockIndex != -1 { // Solo apuntadores directos
+			inodeLabel.WriteString(fmt.Sprintf(`<TR><TD>Bloque[%d]</TD><TD PORT="p%d">%d</TD></TR>`, i, i, blockIndex))
+			edges.WriteString(fmt.Sprintf("  %s:p%d -> block_%d;\n", inodeID, i, blockIndex))
 
-	// Procesar bloques del inodo según su tipo
-	if inodeType == "0" { // Directorio
-		for i, blockIndex := range inode.I_block {
-			if blockIndex != -1 {
-				// Crear conexión del inodo al bloque
-				dot.WriteString(fmt.Sprintf("  inode%d:b%d -> block%d;\n", inodeIndex, i, blockIndex))
-				// Procesar el bloque de directorio
-				if err := processDirectoryBlock(blockIndex, file, sb, dot, processedInodes); err != nil {
-					fmt.Printf("⚠️ Error al procesar bloque de directorio %d: %v\n", blockIndex, err)
-					// Continuar con otros bloques en lugar de fallar completamente
-					continue
-				}
+			var err error
+			if isDir {
+				err = processBlock(blockIndex, true, file, sb, nodes, edges, processed)
+			} else {
+				err = processBlock(blockIndex, false, file, sb, nodes, edges, processed)
 			}
-		}
-	} else if inodeType == "1" { // Archivo
-		for i, blockIndex := range inode.I_block {
-			if blockIndex != -1 {
-				// Crear conexión del inodo al bloque
-				dot.WriteString(fmt.Sprintf("  inode%d:b%d -> block%d;\n", inodeIndex, i, blockIndex))
-				// Procesar el bloque de archivo
-				if err := processFileBlock(blockIndex, file, sb, dot); err != nil {
-					fmt.Printf("⚠️ Error al procesar bloque de archivo %d: %v\n", blockIndex, err)
-					// Continuar con otros bloques en lugar de fallar completamente
-					continue
-				}
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Advertencia: %v\n", err)
 			}
 		}
 	}
+	inodeLabel.WriteString(`</TABLE>>];`)
+	nodes.WriteString(inodeLabel.String() + "\n")
 
 	return nil
 }
 
-func processDirectoryBlock(blockIndex int32, file *os.File, sb Particiones.SuperBlock, dot *strings.Builder, processedInodes map[int32]bool) error {
-	fmt.Printf("🔍 Depuración: Procesando bloque de directorio %d\n", blockIndex)
-
-	// Validar que el bloque esté dentro del rango válido
-	if blockIndex < 0 || blockIndex >= sb.S_blocks_count {
-		return fmt.Errorf("índice de bloque %d fuera de rango", blockIndex)
+// processBlock lee un bloque, lo dibuja, y si es un directorio, procesa sus inodos hijos.
+func processBlock(blockIndex int32, isDirBlock bool, file *os.File, sb Particiones.SuperBlock, nodes *strings.Builder, edges *strings.Builder, processed map[string]bool) error {
+	blockID := fmt.Sprintf("block_%d", blockIndex)
+	if processed[blockID] {
+		return nil
 	}
+	processed[blockID] = true
 
-	// Leer el bloque de directorio
-	var folderBlock Particiones.FolderBlock
-	blockPos := sb.S_block_start + blockIndex*int32(binary.Size(Particiones.FolderBlock{}))
-	if err := Utils.ReadFile(file, &folderBlock, int64(blockPos)); err != nil {
-		return fmt.Errorf("error al leer bloque directorio %d: %v", blockIndex, err)
-	}
+	// Procesa como Bloque de Carpeta
+	if isDirBlock {
+		var folderBlock Particiones.FolderBlock
+		blockPos := sb.S_block_start + blockIndex*int32(binary.Size(Particiones.FolderBlock{}))
+		if err := Utils.ReadFile(file, &folderBlock, int64(blockPos)); err != nil {
+			return fmt.Errorf("no se pudo leer el bloque de carpeta %d: %v", blockIndex, err)
+		}
 
-	// Crear nodo para el bloque con mejor formateo
-	dot.WriteString(fmt.Sprintf("  block%d [label=\"Bloque Directorio %d", blockIndex, blockIndex))
+		var blockLabel strings.Builder
+		blockLabel.WriteString(fmt.Sprintf(`%s [label=<`, blockID))
+		blockLabel.WriteString(`<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1">`) // Verde para Bloque Carpeta
+		blockLabel.WriteString(fmt.Sprintf(`<TR><TD COLSPAN="2"><B>Bloque Carpeta %d</B></TD></TR>`, blockIndex))
+		blockLabel.WriteString(`<TR><TD><B>Nombre</B></TD><TD><B>Inodo Apuntado</B></TD></TR>`)
 
-	// Crear puertos para cada entrada del directorio
-	validEntries := 0
-	for i, content := range folderBlock.B_content {
-		if content.B_inodo != -1 {
+		for i, content := range folderBlock.B_content {
 			name := strings.TrimRight(string(content.B_name[:]), "\x00")
-			if name != "" {
-				dot.WriteString(fmt.Sprintf("|<f%d> %s (Inodo %d)", i, name, content.B_inodo))
-				validEntries++
-			}
-		}
-	}
-
-	if validEntries == 0 {
-		dot.WriteString("|Vacío")
-	}
-
-	dot.WriteString("\"];\n\n")
-
-	// Procesar los inodos referenciados (excepto . y ..)
-	for i, content := range folderBlock.B_content {
-		if content.B_inodo != -1 {
-			name := strings.TrimRight(string(content.B_name[:]), "\x00")
-			if name != "" && name != "." && name != ".." {
-				// Crear conexión del bloque al inodo
-				dot.WriteString(fmt.Sprintf("  block%d:f%d -> inode%d;\n", blockIndex, i, content.B_inodo))
-				// Procesar recursivamente el inodo referenciado
-				if err := processInodeForTree(content.B_inodo, file, sb, dot, processedInodes); err != nil {
-					fmt.Printf("⚠️ Error al procesar inodo %d referenciado desde directorio: %v\n", content.B_inodo, err)
-					// Continuar con otras entradas en lugar de fallar completamente
-					continue
+			if content.B_inodo != -1 && name != "" {
+				blockLabel.WriteString(fmt.Sprintf(`<TR><TD>%s</TD><TD PORT="f%d">%d</TD></TR>`, name, i, content.B_inodo))
+				if name != "." && name != ".." {
+					// Conexión con etiqueta (nombre del archivo/carpeta)
+					edges.WriteString(fmt.Sprintf("  %s:f%d -> inode_%d [label=\"%s\"];\n", blockID, i, content.B_inodo, name))
+					// Llamada recursiva para el inodo hijo
+					processInode(content.B_inodo, file, sb, nodes, edges, processed)
 				}
 			}
 		}
-	}
-
-	return nil
-}
-
-func processFileBlock(blockIndex int32, file *os.File, sb Particiones.SuperBlock, dot *strings.Builder) error {
-	fmt.Printf("🔍 Depuración: Procesando bloque de archivo %d\n", blockIndex)
-
-	// Validar que el bloque esté dentro del rango válido
-	if blockIndex < 0 || blockIndex >= sb.S_blocks_count {
-		return fmt.Errorf("índice de bloque %d fuera de rango", blockIndex)
-	}
-
-	// Leer el bloque de archivo
-	var fileBlock Particiones.FileBlock
-	blockPos := sb.S_block_start + blockIndex*int32(binary.Size(Particiones.FileBlock{}))
-	if err := Utils.ReadFile(file, &fileBlock, int64(blockPos)); err != nil {
-		return fmt.Errorf("error al leer bloque archivo %d: %v", blockIndex, err)
-	}
-
-	// Limpiar y filtrar el contenido del bloque
-	content := cleanContent(string(fileBlock.B_content[:]))
-
-	// Si no hay contenido visible, mostrar indicador
-	if content == "" {
-		content = "[Datos binarios]"
-	}
-
-	// Crear nodo para el bloque
-	dot.WriteString(fmt.Sprintf("  block%d [label=\"Bloque Archivo %d|Contenido:|%s\", style=filled, fillcolor=lightblue];\n",
-		blockIndex, blockIndex, content))
-
-	return nil
-}
-
-func cleanContent(input string) string {
-	var cleaned strings.Builder
-	for _, r := range input {
-		// Filtrar caracteres imprimibles (ASCII 32-126) y algunos caracteres especiales útiles
-		if (r >= 32 && r <= 126) || r == '\n' || r == '\t' {
-			cleaned.WriteRune(r)
+		blockLabel.WriteString(`</TABLE>>];`)
+		nodes.WriteString(blockLabel.String() + "\n")
+	} else { // Procesa como Bloque de Archivo
+		var fileBlock Particiones.FileBlock
+		blockPos := sb.S_block_start + blockIndex*int32(binary.Size(Particiones.FileBlock{}))
+		if err := Utils.ReadFile(file, &fileBlock, int64(blockPos)); err != nil {
+			return fmt.Errorf("no se pudo leer el bloque de archivo %d: %v", blockIndex, err)
 		}
+
+		content := cleanContentForDot(string(fileBlock.B_content[:]))
+		nodes.WriteString(fmt.Sprintf(
+			`%s [label=<
+				<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3">
+					<TR><TD><B>Bloque Archivo %d</B></TD></TR>
+					<TR><TD ALIGN="LEFT">%s</TD></TR>
+				</TABLE>
+			>];`, blockID, blockIndex, content) + "\n",
+		)
 	}
+	return nil
+}
 
-	// Escapar caracteres para el formato DOT
-	result := strings.ReplaceAll(cleaned.String(), "\"", "\\\"")
-	result = strings.ReplaceAll(result, "\\", "\\\\")
-	result = strings.ReplaceAll(result, "\n", "\\n")
-	result = strings.ReplaceAll(result, "\r", "")
-	result = strings.ReplaceAll(result, "\t", " ")
+// cleanContentForDot prepara el texto para ser mostrado de forma segura en Graphviz.
+func cleanContentForDot(input string) string {
+	replacer := strings.NewReplacer(
+		`&`, `&amp;`, `"`, `&quot;`, `'`, `&apos;`,
+		`<`, `&lt;`, `>`, `&gt;`, "\n", `<BR/>`, "\r", "",
+	)
+	cleaned := strings.Trim(input, "\x00 ")
+	escaped := replacer.Replace(cleaned)
 
-	// Limitar la longitud para no romper el formato del gráfico
-	if len(result) > 100 {
-		result = result[:100] + "..."
+	if len(escaped) > 64 {
+		return escaped[:64] + "..."
 	}
-
-	// Si el resultado está vacío después de la limpieza, indicarlo
-	if strings.TrimSpace(result) == "" {
-		result = "[Sin contenido visible]"
+	if escaped == "" {
+		return "[Vacío]"
 	}
-
-	return result
+	return escaped
 }

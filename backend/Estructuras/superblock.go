@@ -10,23 +10,28 @@ import (
 
 // Función auxiliar para marcar los inodos y bloques usados
 func markUsedInodesAndBlocks(newSuperblock Particiones.SuperBlock, file *os.File) error {
-	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_inode_start)); err != nil {
+	// Escribe el byte '1' en la posición 0 del bitmap de inodos
+	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_inode_start+0)); err != nil {
 		return err
 	}
+	// Escribe el byte '1' en la posición 1 del bitmap de inodos
 	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_inode_start+1)); err != nil {
 		return err
 	}
-	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_block_start)); err != nil {
+	// Escribe el byte '1' en la posición 0 del bitmap de bloques
+	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_block_start+0)); err != nil {
 		return err
 	}
+	// Escribe el byte '1' en la posición 1 del bitmap de bloques
 	if err := Utils.WriteFile(file, byte(1), int64(newSuperblock.S_bm_block_start+1)); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Función para imprimir el Superblock
+// Función para imprimir el Superblock (sin cambios)
 func PrintSuperblock(sb Particiones.SuperBlock) string {
+	// ... (El contenido de esta función se mantiene igual)
 	var output strings.Builder
 	output.WriteString(" ============================================================ \n")
 	output.WriteString(" ======================= SUPERBLOCK ========================= \n")

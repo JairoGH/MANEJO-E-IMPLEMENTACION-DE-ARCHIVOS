@@ -9,162 +9,147 @@ import (
 	"strings"
 )
 
-func InitSearch(path string, file *os.File, tempSuperblock Particiones.SuperBlock) (int32, string) {
+// InitSearch inicia la búsqueda de un inodo a partir de una ruta.
+// Esta función ahora llama a la nueva lógica de búsqueda iterativa.
+func InitSearch(path string, file *os.File, sb Particiones.SuperBlock) (int32, string) {
 	var output strings.Builder
-	output.WriteString(" ============================================================================================== \n")
-	output.WriteString(" ==============================================  BUSQUEDA INICIAL  ============================ \n")
-	output.WriteString(" ============================================================================================== \n")
+	output.WriteString(" ====================== BÚSQUEDA INICIAL ====================== \n")
+	output.WriteString(fmt.Sprintf("  Buscando path: %s\n", path))
 
-	output.WriteString(fmt.Sprintf("  path: %s\n", path))
-
-	// Dividir la ruta en partes usando "/" como separador
-	TempStepsPath := strings.Split(path, "/")
-	StepsPath := TempStepsPath[1:]
-
-	output.WriteString(fmt.Sprintf("  StepsPath: %v, len(StepsPath): %d\n", StepsPath, len(StepsPath)))
-	for _, step := range StepsPath {
-		output.WriteString(fmt.Sprintf("  step: %s\n", step))
+	// La raíz es un caso especial, siempre es el inodo 0.
+	if path == "/" {
+		output.WriteString("  Ruta es raíz, devolviendo inodo 0.\n")
+		return 0, output.String()
 	}
 
-	var Inode0 Particiones.Inode
+	// Limpiar y dividir la ruta en componentes. Ej: "/home/user" -> ["home", "user"]
+	cleanedPath := strings.Trim(path, "/")
+	pathComponents := strings.Split(cleanedPath, "/")
+
+	// La búsqueda comienza desde el inodo raíz (0).
+	inodeIndex, log := searchIterative(pathComponents, file, sb)
+	output.WriteString(log)
+
+	if inodeIndex == -1 {
+		output.WriteString(fmt.Sprintf("  Path '%s' no encontrado.\n", path))
+	} else {
+		output.WriteString(fmt.Sprintf("  Path '%s' encontrado en inodo %d.\n", path, inodeIndex))
+	}
+	output.WriteString(" ==================== FIN BÚSQUEDA INICIAL ==================== \n")
+
+	return inodeIndex, output.String()
+}
+
+// searchIterative es la nueva función de búsqueda, corregida y no recursiva.
+func searchIterative(pathComponents []string, file *os.File, sb Particiones.SuperBlock) (int32, string) {
+	var output strings.Builder
+	var currentInode Particiones.Inode
+	var currentInodeIndex int32 = 0 // Empezar siempre desde la raíz
+
 	// Leer el inodo raíz
-	if err := Utils.ReadFile(file, &Inode0, int64(tempSuperblock.S_inode_start)); err != nil {
-		output.WriteString(fmt.Sprintf(" Error al leer el inodo raíz: %v\n", err))
+	if err := Utils.ReadFile(file, &currentInode, int64(sb.S_inode_start)); err != nil {
+		output.WriteString(fmt.Sprintf("  Error crítico: No se pudo leer el inodo raíz (0): %v\n", err))
 		return -1, output.String()
 	}
-	output.WriteString(" ============================================================================== \n")
-	output.WriteString(" ======================== FIN BUSQUEDA ============================================= \n")
-	output.WriteString(" ============================================================================== \n")
 
-	// Llamar a la función que busca el inodo del archivo según la ruta
-	inode, searchLog := SearchInodeByPath(StepsPath, Inode0, file, tempSuperblock)
-	output.WriteString(searchLog)
-
-	return inode, output.String()
-}
-
-// stack
-func pop(s *[]string) string {
-	lastIndex := len(*s) - 1
-	last := (*s)[lastIndex]
-	*s = (*s)[:lastIndex]
-	return last
-}
-
-func SearchInodeByPath(StepsPath []string, Inode Particiones.Inode, file *os.File, tempSuperblock Particiones.SuperBlock) (int32, string) {
-	var output strings.Builder
-	output.WriteString(" ============================================================================== \n")
-	output.WriteString(" ============================= BUSQUEDA INODO POR PATH ======================== \n")
-	output.WriteString(" ============================================================================== \n")
-
-	index := int32(0)
-
-	// Extrae el primer elemento del path y elimina espacios en blanco
-	SearchedName := strings.Replace(pop(&StepsPath), " ", "", -1)
-
-	output.WriteString(fmt.Sprintf(" ===>>> SearchedName: %s\n", SearchedName))
-
-	// Iterar sobre los bloques del inodo
-	for _, block := range Inode.I_block {
-		if block != -1 {
-			if index < 13 {
-				var crrFolderBlock Particiones.FolderBlock
-
-				// Leer el bloque de carpeta desde el archivo binario
-				if err := Utils.ReadFile(file, &crrFolderBlock, int64(tempSuperblock.S_block_start+block*int32(binary.Size(Particiones.FolderBlock{})))); err != nil {
-					output.WriteString(fmt.Sprintf(" Error al leer el bloque de carpeta: %v\n", err))
-					return -1, output.String()
-				}
-
-				// Buscar el archivo/directorio dentro del bloque de carpeta
-				for _, folder := range crrFolderBlock.B_content {
-					output.WriteString(fmt.Sprintf(" ===>>> Folder Name: %s, B_inodo: %d\n", string(folder.B_name[:]), folder.B_inodo))
-
-					// Si el nombre del archivo o directorio coincide
-					if strings.Contains(string(folder.B_name[:]), SearchedName) {
-						output.WriteString(fmt.Sprintf("\tlen(StepsPath): %d, StepsPath: %v\n", len(StepsPath), StepsPath))
-
-						if len(StepsPath) == 0 {
-							output.WriteString(" ============= Folder found ============= \n")
-							return folder.B_inodo, output.String()
-						} else {
-							output.WriteString(" ============= NextInode ============= \n")
-							var NextInode Particiones.Inode
-
-							if err := Utils.ReadFile(file, &NextInode, int64(tempSuperblock.S_inode_start+folder.B_inodo*int32(binary.Size(Particiones.Inode{})))); err != nil {
-								output.WriteString(fmt.Sprintf(" Error al leer el siguiente inodo: %v\n", err))
-								return -1, output.String()
-							}
-
-							// Llamada recursiva para seguir con la búsqueda
-							return SearchInodeByPath(StepsPath, NextInode, file, tempSuperblock)
-						}
-					}
-				}
-			} else {
-				output.WriteString(" Manejo de bloques indirectos no implementado\n")
-			}
+	// Recorrer cada parte de la ruta (ej: "home", luego "user")
+	for _, component := range pathComponents {
+		if component == "" {
+			continue
 		}
-		index++
-	}
-	output.WriteString(" ============================================================================== \n")
-	output.WriteString(" ======================== FIN BUSQUEDA INODO POR PATH ============================ \n")
-	output.WriteString(" ============================================================================== \n")
-	return 0, output.String()
-}
 
-// GetInodeFileData lee el contenido de un archivo a partir de su inodo.
-func GetInodeFileData(Inode Particiones.Inode, file *os.File, tempSuperblock Particiones.SuperBlock) (string, string) {
-	var output strings.Builder
-	var content string
+		output.WriteString(fmt.Sprintf("\n  Buscando componente: '%s' en inodo %d\n", component, currentInodeIndex))
 
-	output.WriteString(" ============================================================================== \n")
-	output.WriteString(" ========================== CONTENIDO DEL BLOQUE ============================== \n")
-	output.WriteString(" ============================================================================== \n")
+		// Solo podemos buscar dentro de directorios
+		if currentInode.I_type[0] != '0' {
+			output.WriteString(fmt.Sprintf("  Error: Se intentó buscar dentro de un archivo (inodo %d no es un directorio).\n", currentInodeIndex))
+			return -1, output.String()
+		}
 
-	index := int32(0)
-	processedBlocks := make(map[int32]bool) // Mapa para rastrear bloques procesados
+		foundNextComponent := false
+		nextInodeIndex := int32(-1)
 
-	// Iterar sobre los bloques del inodo
-	for _, block := range Inode.I_block {
-		if block != -1 {
-			// Verificar si el bloque ya fue procesado
-			if processedBlocks[block] {
-				output.WriteString(fmt.Sprintf("Bloque %d ya procesado, omitiendo...\n", block))
+		// Iterar sobre los bloques directos del inodo actual
+		for i := 0; i < 12 && !foundNextComponent; i++ {
+			blockIndex := currentInode.I_block[i]
+			if blockIndex == -1 {
 				continue
 			}
 
-			// Manejo de bloques directos (0-12)
-			if index < 13 {
-				var crrFileBlock Particiones.FileBlock
+			var folderBlock Particiones.FolderBlock
+			blockPos := sb.S_block_start + blockIndex*sb.S_block_size
+			if err := Utils.ReadFile(file, &folderBlock, int64(blockPos)); err != nil {
+				output.WriteString(fmt.Sprintf("  Advertencia: No se pudo leer el bloque de carpeta %d.\n", blockIndex))
+				continue
+			}
 
-				// Leer el bloque de archivo desde el archivo binario
-				if err := Utils.ReadFile(file, &crrFileBlock, int64(tempSuperblock.S_block_start+block*int32(binary.Size(Particiones.FileBlock{})))); err != nil {
-					output.WriteString(fmt.Sprintf("Error al leer el bloque de archivo: %v\n", err))
-					return "", output.String()
+			// Buscar la entrada en el bloque de carpeta
+			for _, entry := range folderBlock.B_content {
+				entryName := strings.TrimRight(string(entry.B_name[:]), "\x00")
+				// --- CORRECCIÓN CLAVE: Comparación exacta en lugar de Contains ---
+				if entryName == component {
+					output.WriteString(fmt.Sprintf("    -> ¡Encontrado! '%s' apunta al inodo %d.\n", entryName, entry.B_inodo))
+					nextInodeIndex = entry.B_inodo
+					foundNextComponent = true
+					break // Salir del bucle de entradas
 				}
-
-				// Mostrar el contenido del bloque
-				output.WriteString(fmt.Sprintf(", %d, %s\n", block, string(crrFileBlock.B_content[:])))
-
-				// Agregar el contenido del bloque al resultado final
-				content += string(crrFileBlock.B_content[:])
-
-				// Marcar el bloque como procesado
-				processedBlocks[block] = true
-			} else {
-				output.WriteString(" Manejo de bloques indirectos no implementado \n")
 			}
 		}
-		index++
+
+		// Si después de buscar en todos los bloques no se encontró el componente
+		if !foundNextComponent {
+			output.WriteString(fmt.Sprintf("  Error: Componente '%s' no encontrado en el inodo %d.\n", component, currentInodeIndex))
+			return -1, output.String() // --- CORRECCIÓN CLAVE: Devolver -1 en caso de fallo ---
+		}
+
+		// Preparar para la siguiente iteración: leer el siguiente inodo
+		currentInodeIndex = nextInodeIndex
+		inodePos := sb.S_inode_start + currentInodeIndex*sb.S_inode_size
+		if err := Utils.ReadFile(file, &currentInode, int64(inodePos)); err != nil {
+			output.WriteString(fmt.Sprintf("  Error crítico: No se pudo leer el siguiente inodo (%d): %v\n", currentInodeIndex, err))
+			return -1, output.String()
+		}
 	}
-	output.WriteString(" ============================================================================== \n")
-	output.WriteString(" ============================= FIN CONTENIDO DEL BLOQUE ======================= \n")
-	output.WriteString(" ============================================================================== \n")
-	return content, output.String()
+
+	// Si el bucle termina, significa que se recorrió toda la ruta con éxito.
+	return currentInodeIndex, output.String()
 }
 
+// GetInodeFileData lee el contenido de un archivo a partir de su inodo.
+// Esta función se mantiene para compatibilidad con otros comandos.
+func GetInodeFileData(Inode Particiones.Inode, file *os.File, tempSuperblock Particiones.SuperBlock) (string, string) {
+	var output strings.Builder
+	var content strings.Builder
+
+	// Iterar sobre los bloques del inodo
+	for i := 0; i < 12; i++ {
+		blockIndex := Inode.I_block[i]
+		if blockIndex != -1 {
+			var crrFileBlock Particiones.FileBlock
+			blockPos := tempSuperblock.S_block_start + blockIndex*tempSuperblock.S_block_size
+			if err := Utils.ReadFile(file, &crrFileBlock, int64(blockPos)); err == nil {
+				// Limpiar bytes nulos antes de agregar al contenido
+				content.WriteString(strings.TrimRight(string(crrFileBlock.B_content[:]), "\x00"))
+			} else {
+				output.WriteString(fmt.Sprintf("Error al leer el bloque de archivo %d: %v\n", blockIndex, err))
+			}
+		}
+	}
+
+	// Recortar el contenido al tamaño real especificado en el inodo
+	if Inode.I_size < int32(content.Len()) {
+		return content.String()[:Inode.I_size], output.String()
+	}
+
+	return content.String(), output.String()
+}
+
+// Las funciones findFreeBlock y AppendToFileBlock se mantienen sin cambios ya que no
+// están directamente relacionadas con la lógica de búsqueda de rutas.
+// ... (tu código para findFreeBlock y AppendToFileBlock aquí) ...
+
 func AppendToFileBlock(inode *Particiones.Inode, newData string, file *os.File, superblock Particiones.SuperBlock) (error, string) {
+	// Tu implementación actual de AppendToFileBlock
 	var output strings.Builder
 	output.WriteString(" ============================================================================== \n")
 	output.WriteString(" ========================== AGREGAR AL BLOQUE ========================== \n")
@@ -271,6 +256,7 @@ func AppendToFileBlock(inode *Particiones.Inode, newData string, file *os.File, 
 }
 
 func findFreeBlock(file *os.File, superblock Particiones.SuperBlock) (int32, string) {
+	// Tu implementación actual de findFreeBlock
 	var output strings.Builder
 	var blockBitmap []byte = make([]byte, superblock.S_blocks_count)
 

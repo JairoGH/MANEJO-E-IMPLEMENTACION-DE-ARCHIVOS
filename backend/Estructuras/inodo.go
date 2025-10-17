@@ -9,21 +9,6 @@ import (
 	"strings"
 )
 
-// Función auxiliar para inicializar un inodo
-func initInode(inode *Particiones.Inode, date string) {
-	inode.I_uid = 1
-	inode.I_gid = 1
-	inode.I_size = 0
-	copy(inode.I_atime[:], date)
-	copy(inode.I_ctime[:], date)
-	copy(inode.I_mtime[:], date)
-	copy(inode.I_perm[:], "664")
-
-	for i := int32(0); i < 15; i++ {
-		inode.I_block[i] = -1
-	}
-}
-
 // GetInodeFileData lee el contenido de un archivo a partir de su inodo.
 func GetInodeFileData(inode Particiones.Inode, file *os.File, superblock Particiones.SuperBlock) (string, string) {
 	var output strings.Builder

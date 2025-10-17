@@ -15,7 +15,7 @@ func fn_mkfs(input string) string {
 	fs_ := fs.String("fs", "2fs", "Fs")
 
 	// Parsear la cadena de entrada.
-	matches := paramRegex.FindAllStringSubmatch(input, -1)
+	matches := paramWithValue.FindAllStringSubmatch(input, -1)
 
 	for _, match := range matches {
 		flagName := match[1]

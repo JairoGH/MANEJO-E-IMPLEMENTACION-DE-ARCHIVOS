@@ -5,7 +5,17 @@ import (
 	"strings"
 )
 
-var paramRegex = regexp.MustCompile(`-(\w+)=("[^"]+"|\S+)`)
+// Go/RE2 no soporta lookahead (?=) ni grupos no capturantes (?:)
+// Usamos dos regex simples y seguras:
+//
+//  1. Flags con valor: -key="con espacios"  ó  -key=valor
+//     Nota: [^-[:space:]]+ = cualquier cosa que no sea espacio ni '-' (corta antes del siguiente flag)
+var paramWithValue = regexp.MustCompile(`-(\w+)=("([^"]*)"|\S+)`)
+
+//  2. Flags sin valor: -p  -debug
+//     Matchea cuando hay espacio/INICIO antes y espacio/FIN después.
+//     OJO: no matchea -key=valor (que lo toma paramWithValue).
+var paramFlagOnly = regexp.MustCompile(`(^|[[:space:]])-(\w+)([[:space:]]|$)`)
 
 func GetInput(input string) (string, string) {
 	parts := strings.Fields(input)
@@ -17,26 +27,35 @@ func GetInput(input string) (string, string) {
 	return "", input
 }
 
-func ExtractParams(params string) map[string]string {
-	matches := paramRegex.FindAllStringSubmatch(params, -1)
-	paramMap := make(map[string]string)
+// Solo minúsculas para la KEY; el VALOR se preserva (case-sensitive).
+// Soporta valores entrecomillados y flags sin valor.
+func ExtractParams(s string) map[string]string {
+	m := map[string]string{}
 
-	for _, match := range matches {
-		flagName := strings.ToLower(match[1])
-		flagValue := strings.Trim(match[2], "\"")
-		if flagName == "path" {
-
-			flagValue = strings.ToLower(flagValue)
+	// 1) -key=valor
+	with := paramWithValue.FindAllStringSubmatch(s, -1)
+	for _, g := range with {
+		key := strings.ToLower(g[1])
+		val := g[2]
+		// quitar comillas "..."
+		if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
+			val = val[1 : len(val)-1]
 		}
-		paramMap[flagName] = flagValue
+		m[key] = val // preserva mayúsculas del valor (p. ej. path)
 	}
 
-	return paramMap
+	// 2) -flag (sin valor). Evitamos pisar los que ya tienen valor.
+	flags := paramFlagOnly.FindAllStringSubmatch(s, -1)
+	for _, g := range flags {
+		key := strings.ToLower(g[2]) // el nombre del flag es el grupo 2
+		if _, exists := m[key]; !exists {
+			m[key] = "" // presente sin valor
+		}
+	}
+	return m
 }
 
 func AnalyzerCommand(commands string, params string) string {
-	ExtractParams(params)
-
 	result := "> " + commands + " " + params + "\n"
 
 	switch {

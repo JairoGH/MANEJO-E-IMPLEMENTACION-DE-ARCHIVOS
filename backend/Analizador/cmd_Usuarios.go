@@ -16,7 +16,7 @@ func fn_login(input string) string {
 	id := fs.String("id", "", "Id")
 
 	fs.Parse(os.Args[1:])
-	matches := paramRegex.FindAllStringSubmatch(input, -1)
+	matches := paramWithValue.FindAllStringSubmatch(input, -1)
 	for _, match := range matches {
 		flagName := match[1]
 		flagValue := match[2]

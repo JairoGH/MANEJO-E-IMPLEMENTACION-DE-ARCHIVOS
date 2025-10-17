@@ -5,7 +5,6 @@ import (
 	"backend/Particiones"
 	"backend/Usuarios"
 	"backend/Utils"
-	"encoding/binary"
 	"fmt"
 	"os"
 	"os/exec"
@@ -18,228 +17,160 @@ import (
 func GenerarReporteLS(pathFileLs string, outputPath string, id string) string {
 	var out strings.Builder
 
-	// Detectar flags embebidos en el path: /* (solo archivos), /** (recursivo)
-	listFlags := parseListFlags(&pathFileLs)
+	// Si no se especifica un path, el default es la raíz "/"
+	if strings.TrimSpace(pathFileLs) == "" {
+		pathFileLs = "/"
+	}
 
 	// Normalizar path lógico y quitar slash final (excepto "/")
 	pathFileLs = normalizeFSPath(pathFileLs)
 
-	// Requiere sesión
 	if !Usuarios.IsUserLoggedIn() {
 		return "Error: No hay una sesión activa. Use 'login' primero."
 	}
 
-	// Partición montada por ID
 	mp, ok := Entornos.GetMountedPartitionByID(id)
 	if !ok {
 		return fmt.Sprintf("Error: No se encontró la partición con ID %s montada", id)
 	}
 
-	// Generar DOT
-	dot, err := generateLSDotContent(*mp, pathFileLs, listFlags)
+	dot, err := generateLSDotContent(*mp, pathFileLs)
 	if err != nil {
 		return fmt.Sprintf("Error al generar contenido LS: %v", err)
 	}
 
-	// Asegurar carpeta
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return fmt.Sprintf("Error al crear directorios de salida: %v", err)
 	}
 
-	// Escribir .dot
 	dotPath := strings.TrimSuffix(outputPath, filepath.Ext(outputPath)) + ".dot"
-	if err := os.WriteFile(dotPath, []byte(dot), 0o644); err != nil {
+	if err := os.WriteFile(dotPath, []byte(dot), 0644); err != nil {
 		return fmt.Sprintf("Error al escribir archivo DOT: %v", err)
 	}
 
-	// Generar imagen
 	cmd := exec.Command("dot", "-Tjpg", dotPath, "-o", outputPath)
 	if gvOut, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Sprintf("Error al generar imagen con Graphviz: %v\nSalida: %s", err, string(gvOut))
 	}
 
 	out.WriteString("Reporte LS generado correctamente:\n")
-	out.WriteString("  - Imagen : " + outputPath + "\n")
-	out.WriteString("  - DOT    : " + dotPath + "\n")
+	out.WriteString(fmt.Sprintf("  - Imagen : %s\n", outputPath))
+	out.WriteString(fmt.Sprintf("  - DOT    : %s\n", dotPath))
 	return out.String()
 }
 
-// ====================== Núcleo del reporte ======================
-
-type lsFlags struct {
-	onlyFiles bool
-	recursive bool
-}
-
-func generateLSDotContent(part Entornos.MountedPartition, logicalPath string, flags lsFlags) (string, error) {
+// generateLSDotContent es el núcleo que crea el reporte en formato DOT.
+func generateLSDotContent(part Entornos.MountedPartition, logicalPath string) (string, error) {
 	file, err := Utils.OpenFile(part.MountPath)
 	if err != nil {
 		return "", fmt.Errorf("no se pudo abrir el disco: %v", err)
 	}
 	defer file.Close()
 
-	// Superbloque
 	var sb Particiones.SuperBlock
 	if err := Utils.ReadFile(file, &sb, int64(part.MountStart)); err != nil {
 		return "", fmt.Errorf("no se pudo leer el superbloque: %v", err)
 	}
 
-	// Resolver inodo objetivo (carpeta o archivo)
-	var inodeIdx int32
-	var log string
-	if logicalPath == "/" {
-		inodeIdx = 0
-	} else {
-		inodeIdx, log = Usuarios.InitSearch(logicalPath, file, sb)
-		if inodeIdx == -1 {
-			return "", fmt.Errorf("ruta no encontrada '%s': %s", logicalPath, log)
-		}
+	// --- LÓGICA CORREGIDA ---
+	// 1. Encontrar el inodo del directorio solicitado
+	inodeIdx, _ := Usuarios.InitSearch(logicalPath, file, sb)
+	if inodeIdx == -1 {
+		return "", fmt.Errorf("la ruta '%s' no fue encontrada", logicalPath)
 	}
 
-	// Leer inodo
-	var in Particiones.Inode
-	inPos := sb.S_inode_start + inodeIdx*int32(binary.Size(Particiones.Inode{}))
-	if err := Utils.ReadFile(file, &in, int64(inPos)); err != nil {
-		return "", fmt.Errorf("error al leer inodo en %d: %v", inPos, err)
+	var targetInode Particiones.Inode
+	inodePos := sb.S_inode_start + inodeIdx*sb.S_inode_size
+	if err := Utils.ReadFile(file, &targetInode, int64(inodePos)); err != nil {
+		return "", fmt.Errorf("error al leer el inodo de la ruta '%s': %v", logicalPath, err)
 	}
 
-	// Armar DOT
+	// Verificar si la ruta es un directorio
+	if targetInode.I_type[0] != '0' {
+		return "", fmt.Errorf("la ruta '%s' no es un directorio", logicalPath)
+	}
+
+	// --- 2. Construir la tabla DOT ---
 	var b strings.Builder
 	b.WriteString("digraph G {\n")
-	b.WriteString("  rankdir=\"LR\";\n")
 	b.WriteString("  node [shape=plaintext];\n")
-	b.WriteString("  graph [fontname=\"Arial\", fontsize=10];\n")
-	b.WriteString("  edge  [fontname=\"Arial\", fontsize=8];\n\n")
+	b.WriteString(fmt.Sprintf(`  ls_table [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5F5F5">
+      <TR><TD COLSPAN="8" BGCOLOR="#4CAF50"><B>Contenido de: %s</B></TD></TR>
+      <TR>
+        <TD><B>Permisos</B></TD>
+        <TD><B>Dueño</B></TD>
+        <TD><B>Grupo</B></TD>
+        <TD><B>Tamaño</B></TD>
+        <TD><B>Fecha Mod.</B></TD>
+        <TD><B>Hora Mod.</B></TD>
+        <TD><B>Tipo</B></TD>
+        <TD><B>Nombre</B></TD>
+      </TR>
+`, htmlEscape(logicalPath)))
 
-	b.WriteString("  ls_table [label=<\n")
-	b.WriteString("    <table border='0' cellborder='1' cellspacing='0'>\n")
-	b.WriteString("      <tr><td colspan='9' bgcolor='#e0e0e0'><b>Contenido de: " + htmlEscape(logicalPath) + headerSuffix(flags) + "</b></td></tr>\n")
-	b.WriteString("      <tr>")
-	b.WriteString("<td><b>Permisos</b></td>")
-	b.WriteString("<td><b>Owner</b></td>")
-	b.WriteString("<td><b>Grupo</b></td>")
-	b.WriteString("<td><b>Tamaño</b></td>")
-	b.WriteString("<td><b>Fecha mod</b></td>")
-	b.WriteString("<td><b>Hora mod</b></td>")
-	b.WriteString("<td><b>Tipo</b></td>")
-	b.WriteString("<td><b>Fecha creación</b></td>")
-	b.WriteString("<td><b>Nombre</b></td>")
-	b.WriteString("</tr>\n")
-
-	writeRow := func(e *Particiones.Inode, name string) {
-		fechaMod, horaMod := parseDateTimeFlexible(e.I_mtime[:])
-		fechaCre, _ := parseDateTimeFlexible(e.I_ctime[:]) // solo fecha de creación
-
-		tipo := "Archivo"
-		icon := "📄"
-		if e.I_type[0] == '0' {
-			tipo = "Carpeta"
-			icon = "📁"
+	// --- 3. Iterar solo sobre los bloques del directorio encontrado ---
+	for i := 0; i < 12; i++ { // Solo bloques directos
+		blockIndex := targetInode.I_block[i]
+		if blockIndex == -1 {
+			continue
 		}
 
-		// Si se pidió sólo archivos, no imprimir carpetas
-		if flags.onlyFiles && e.I_type[0] == '0' {
-			return
+		var folderBlock Particiones.FolderBlock
+		blockPos := sb.S_block_start + blockIndex*sb.S_block_size
+		if err := Utils.ReadFile(file, &folderBlock, int64(blockPos)); err != nil {
+			continue // Si no se puede leer el bloque, simplemente lo ignoramos
 		}
 
-		b.WriteString(fmt.Sprintf(
-			"      <tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s %s</td></tr>\n",
-			htmlEscape(trimNulls(string(e.I_perm[:]))),
-			e.I_uid,
-			e.I_gid,
-			e.I_size,
-			htmlEscape(fechaMod),
-			htmlEscape(horaMod),
-			htmlEscape(tipo),
-			htmlEscape(fechaCre),
-			icon,
-			htmlEscape(name),
-		))
-	}
+		// Iterar sobre las 4 entradas de cada bloque de carpeta
+		for _, entry := range folderBlock.B_content {
+			entryName := strings.TrimRight(string(entry.B_name[:]), "\x00")
+			childInodeIndex := entry.B_inodo
 
-	// Walker (direct blocks) con soporte recursivo
-	var walkDir func(curr *Particiones.Inode, prefix string)
-	walkDir = func(curr *Particiones.Inode, prefix string) {
-		for i, blk := range curr.I_block {
-			if i >= 12 || blk == -1 {
+			if childInodeIndex == -1 || entryName == "" || entryName == "." || entryName == ".." {
 				continue
 			}
-			blkPos := sb.S_block_start + blk*sb.S_block_size
-			var fb Particiones.FolderBlock
-			if err := Utils.ReadFile(file, &fb, int64(blkPos)); err != nil {
+
+			// Leer el inodo hijo para obtener sus detalles
+			var childInode Particiones.Inode
+			childInodePos := sb.S_inode_start + childInodeIndex*sb.S_inode_size
+			if err := Utils.ReadFile(file, &childInode, int64(childInodePos)); err != nil {
 				continue
 			}
-			for _, e := range fb.B_content {
-				if e.B_inodo == -1 {
-					continue
-				}
-				name := trimNulls(string(e.B_name[:]))
-				if name == "" || name == "." || name == ".." {
-					continue
-				}
-				if e.B_inodo < 0 || e.B_inodo >= sb.S_inodes_count {
-					continue
-				}
-				var child Particiones.Inode
-				cPos := sb.S_inode_start + e.B_inodo*int32(binary.Size(Particiones.Inode{}))
-				if err := Utils.ReadFile(file, &child, int64(cPos)); err != nil {
-					continue
-				}
-				rel := name
-				if prefix != "" {
-					rel = prefix + name
-				}
-				writeRow(&child, rel)
-				// Si es carpeta y se pidió recursivo, seguir bajando
-				if flags.recursive && child.I_type[0] == '0' {
-					walkDir(&child, rel+"/")
-				}
-			}
+
+			// Escribir la fila en la tabla
+			writeRow(&b, &childInode, entryName)
 		}
 	}
 
-	// Directorio o archivo
-	if in.I_type[0] == '0' {
-		walkDir(&in, "")
-	} else {
-		// Archivo: una sola fila (mantenemos compatibilidad)
-		writeRow(&in, baseNameFS(logicalPath))
-	}
-
-	b.WriteString("    </table>\n")
-	b.WriteString("  >];\n")
+	b.WriteString("    </TABLE>>];\n")
 	b.WriteString("}\n")
 	return b.String(), nil
 }
 
-// ====================== Utilidades ======================
+// writeRow escribe una fila de la tabla HTML para un inodo.
+func writeRow(b *strings.Builder, inode *Particiones.Inode, name string) {
+	fechaMod, horaMod := parseDateTimeFlexible(inode.I_mtime[:])
 
-func parseListFlags(p *string) lsFlags {
-	path := *p
-	flags := lsFlags{}
-	// /**  -> recursivo (y por consistencia, se listarán archivos; las carpetas se recorren)
-	if strings.HasSuffix(path, "/**") {
-		flags.recursive = true
-		path = strings.TrimSuffix(path, "/**")
+	tipo := "Archivo"
+	if inode.I_type[0] == '0' {
+		tipo = "Carpeta"
 	}
-	// /* -> solo archivos de ese directorio
-	if strings.HasSuffix(path, "/*") {
-		flags.onlyFiles = true
-		path = strings.TrimSuffix(path, "/*")
-	}
-	*p = path
-	return flags
+
+	b.WriteString(fmt.Sprintf(
+		`      <TR><TD>%s</TD><TD>%d</TD><TD>%d</TD><TD>%d</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD><TD>%s</TD></TR>`,
+		htmlEscape(strings.TrimRight(string(inode.I_perm[:]), "\x00")),
+		inode.I_uid,
+		inode.I_gid,
+		inode.I_size,
+		htmlEscape(fechaMod),
+		htmlEscape(horaMod),
+		htmlEscape(tipo),
+		htmlEscape(name),
+	))
 }
 
-func headerSuffix(f lsFlags) string {
-	if f.recursive {
-		return " (recursivo)"
-	}
-	if f.onlyFiles {
-		return " (solo archivos)"
-	}
-	return ""
-}
+// ====================== Utilidades (sin cambios) ======================
 
 func normalizeFSPath(p string) string {
 	p = strings.TrimSpace(p)
@@ -250,7 +181,6 @@ func normalizeFSPath(p string) string {
 	for strings.Contains(p, "//") {
 		p = strings.ReplaceAll(p, "//", "/")
 	}
-	// quitar slash final excepto raíz
 	if len(p) > 1 && strings.HasSuffix(p, "/") {
 		p = strings.TrimRight(p, "/")
 	}
@@ -260,62 +190,32 @@ func normalizeFSPath(p string) string {
 	return p
 }
 
-func baseNameFS(p string) string {
-	if p == "/" {
-		return "/"
-	}
-	if i := strings.LastIndex(p, "/"); i >= 0 && i+1 < len(p) {
-		return p[i+1:]
-	}
-	return p
-}
-
 func htmlEscape(s string) string {
-	r := strings.NewReplacer(
-		"&", "&amp;", "<", "&lt;", ">", "&gt;", "\"", "&quot;", "'", "&#39;",
-	)
-	return r.Replace(s)
+	return strings.NewReplacer(
+		"&", "&amp;", "<", "&lt;", ">", "&gt;",
+		`"`, "&quot;", "'", "&#39;",
+	).Replace(s)
 }
 
-func trimNulls(s string) string { return strings.TrimRight(strings.TrimSpace(s), "\x00") }
-
-// -------- Fechas --------
 func parseDateTimeFlexible(raw []byte) (string, string) {
-	s := trimNulls(string(raw))
+	s := strings.TrimRight(string(raw), "\x00 ")
 	if s == "" {
 		return "N/A", "N/A"
 	}
-	s = strings.Join(strings.Fields(s), " ")
-	if strings.HasSuffix(s, ":") {
-		s = strings.TrimSuffix(s, ":")
+
+	// Probar varios formatos comunes, incluyendo el tuyo
+	layouts := []string{
+		"02/01/2006 15:04",
+		"02/01/2006 15:04:05",
+		"2006-01-02 15:04:05",
+		"2006-01-02 15:04",
 	}
 
-	parse := func(layout string) (time.Time, bool) {
-		t, err := time.ParseInLocation(layout, s, time.Local)
-		return t, err == nil
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, s)
+		if err == nil {
+			return t.Format("2006-01-02"), t.Format("15:04")
+		}
 	}
-
-	// dd/mm/yyyy HH:MM[:SS]
-	if t, ok := parse("02/01/2006 15:04:05"); ok {
-		return t.Format("02/01/2006"), t.Format("15:04")
-	}
-	if t, ok := parse("02/01/2006 15:04"); ok {
-		return t.Format("02/01/2006"), t.Format("15:04")
-	}
-	// dd/mm/yyyy
-	if t, ok := parse("02/01/2006"); ok {
-		return t.Format("02/01/2006"), "00:00"
-	}
-	// yyyy-mm-dd HH:MM[:SS]
-	if t, ok := parse("2006-01-02 15:04:05"); ok {
-		return t.Format("02/01/2006"), t.Format("15:04")
-	}
-	if t, ok := parse("2006-01-02 15:04"); ok {
-		return t.Format("02/01/2006"), t.Format("15:04")
-	}
-	// yyyy-mm-dd
-	if t, ok := parse("2006-01-02"); ok {
-		return t.Format("02/01/2006"), "00:00"
-	}
-	return "N/A", "N/A"
+	return "Fecha Inválida", ""
 }

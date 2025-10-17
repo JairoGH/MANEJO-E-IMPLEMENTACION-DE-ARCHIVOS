@@ -5,60 +5,35 @@ import (
 	"backend/Particiones"
 	"backend/Usuarios"
 	"backend/Utils"
-	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// GenerarReporteFile lee el contenido de un archivo del FS EXT2 simulado
-func GenerarReporteFile(pathFileLs, path, id string) string {
-	var output strings.Builder
-
-	// ====================== Validaciones básicas ======================
+// GenerarReporteFile lee el contenido exacto de un archivo del sistema de archivos simulado
+// y lo guarda en un archivo de texto en la ruta especificada.
+func GenerarReporteFile(pathFileLs, outputPath, id string) string {
+	// --- 1. Validaciones Iniciales ---
 	if !Usuarios.IsUserLoggedIn() {
 		return "Error: No hay una sesión activa. Use 'login' primero."
 	}
-	if strings.TrimSpace(path) == "" {
-		return "Error: El parámetro de salida 'path' no puede estar vacío."
+	if strings.TrimSpace(outputPath) == "" {
+		return "Error: El parámetro de salida -path no puede estar vacío."
 	}
 	if strings.TrimSpace(id) == "" {
-		return "Error: El parámetro 'id' no puede estar vacío."
+		return "Error: El parámetro -id no puede estar vacío."
+	}
+	if strings.TrimSpace(pathFileLs) == "" {
+		return "Error: Debe especificar la ruta del archivo a leer con -path_file_ls."
 	}
 
-	// Normalizar rutas
-	path = filepath.Clean(path)
-	if pathFileLs != "" {
-		pathFileLs = filepath.Clean(pathFileLs)
-	}
-
-	// Si no te pasan un path del FS, puedes forzar /users.txt como default.
-	// Descomenta si lo deseas:
-	// if pathFileLs == "" {
-	// 	pathFileLs = "/users.txt"
-	// }
-
-	// ====================== Buscar partición montada ======================
-	var mountedPartition Entornos.MountedPartition
-	found := false
-	for _, partitions := range Entornos.GetMountedPartitions() {
-		for _, partition := range partitions {
-			if partition.MountID == id {
-				mountedPartition = partition
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
+	// --- 2. Obtener Partición y Superbloque ---
+	mountedPartition, found := Entornos.GetMountedPartitionByID(id)
 	if !found {
 		return fmt.Sprintf("Error: No se encontró la partición con ID %s montada", id)
 	}
 
-	// ====================== Abrir disco y leer superbloque ======================
 	file, err := Utils.OpenFile(mountedPartition.MountPath)
 	if err != nil {
 		return fmt.Sprintf("Error: No se pudo abrir el disco: %v", err)
@@ -70,58 +45,37 @@ func GenerarReporteFile(pathFileLs, path, id string) string {
 		return fmt.Sprintf("Error: No se pudo leer el superbloque: %v", err)
 	}
 
-	// ====================== Resolver inodo del archivo ======================
+	// --- 3. Encontrar y Validar el Inodo del Archivo ---
 	inodeIndex, _ := Usuarios.InitSearch(pathFileLs, file, superblock)
 	if inodeIndex == -1 {
-		return fmt.Sprintf("Error: Archivo '%s' no encontrado", pathFileLs)
+		return fmt.Sprintf("Error: Archivo '%s' no encontrado en el sistema de archivos.", pathFileLs)
 	}
 
 	var fileInode Particiones.Inode
-	inodePos := superblock.S_inode_start + inodeIndex*int32(binary.Size(Particiones.Inode{}))
+	inodePos := superblock.S_inode_start + inodeIndex*superblock.S_inode_size
 	if err := Utils.ReadFile(file, &fileInode, int64(inodePos)); err != nil {
 		return fmt.Sprintf("Error al leer el inodo del archivo: %v", err)
 	}
 
-	// Verificar que sea archivo regular (en tu proyecto '1' es archivo)
+	// Verificar que sea un archivo regular (tipo '1')
 	if fileInode.I_type[0] != '1' {
-		return "Error: La ruta especificada no es un archivo regular"
+		return fmt.Sprintf("Error: La ruta '%s' no corresponde a un archivo.", pathFileLs)
 	}
 
-	// ====================== Leer y limpiar contenido ======================
-	content, _ := Usuarios.GetInodeFileData(fileInode, file, superblock)
-	cleanedContent := cleanFileContent(content)
+	// --- 4. Leer el Contenido del Archivo (sin limpiarlo) ---
+	// La función GetInodeFileData ya se encarga de concatenar los bloques y truncar al tamaño correcto.
+	content, log := Usuarios.GetInodeFileData(fileInode, file, superblock)
+	fmt.Println(log) // Imprime el log de la lectura de bloques para depuración
 
-	// ====================== Guardado local ======================
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	// --- 5. Guardar el Contenido Exacto en el Archivo de Salida ---
+	// Asegurarse de que el directorio de salida exista
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
 		return fmt.Sprintf("Error al crear directorios de salida: %v", err)
 	}
-	if err := os.WriteFile(path, []byte(cleanedContent), 0o644); err != nil {
-		return fmt.Sprintf("Error al guardar el archivo: %v", err)
+	// Escribir el contenido crudo al archivo
+	if err := os.WriteFile(outputPath, []byte(content), 0644); err != nil {
+		return fmt.Sprintf("Error al guardar el archivo de reporte: %v", err)
 	}
 
-	output.WriteString(fmt.Sprintf("Contenido de '%s' guardado en: %s", pathFileLs, path))
-	return output.String()
-}
-
-// cleanFileContent elimina bytes no imprimibles, líneas vacías y espacios extras.
-func cleanFileContent(content string) string {
-	// Mantener ASCII imprimible, salto de línea y tab
-	cleaned := strings.Map(func(r rune) rune {
-		if (r >= 32 && r <= 126) || r == '\n' || r == '\t' {
-			return r
-		}
-		return -1
-	}, content)
-
-	// Quitar líneas vacías y trim por línea
-	lines := strings.Split(cleaned, "\n")
-	var result strings.Builder
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			result.WriteString(trimmed)
-			result.WriteString("\n")
-		}
-	}
-	return strings.TrimSpace(result.String())
+	return fmt.Sprintf("Contenido del archivo '%s' guardado exitosamente en: %s", pathFileLs, outputPath)
 }
