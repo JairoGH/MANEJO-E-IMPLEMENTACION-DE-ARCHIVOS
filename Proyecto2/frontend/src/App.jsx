@@ -661,7 +661,7 @@ const ReportsTab = ({ apiUrl, apiStatus, session }) => {
               <input
                 value={form.ruta}
                 onChange={(e) => setF("ruta", e.target.value)}
-                placeholder={selected.key === "DISK" ? "/home/ubuntu/Calificacion_MIA/" : "/home/ubuntu/Calificacion_MIA/Discos/Disco1.mia"}
+                placeholder={selected.key === "DISK" ? "/home/jairogo/Calificacion_MIA/" : "/home/jairogo/Calificacion_MIA/Discos/Disco1.mia"}
                 className="w-full p-2 bg-black border border-green-500 rounded text-green-300"
               />
             </div>

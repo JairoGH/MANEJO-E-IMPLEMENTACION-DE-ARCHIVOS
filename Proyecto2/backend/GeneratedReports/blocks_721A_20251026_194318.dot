@@ -1,0 +1,203 @@
+digraph AllBlocks {
+  rankdir=LR;
+  node [shape=plaintext];
+  label="Reporte de Bloques Utilizados (Agrupados por Inodo)";
+
+  subgraph cluster_inode_0 {
+    label="Bloques del Inodo 0 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_0 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 0</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>0</TD></TR><TR><TD>..</TD><TD>0</TD></TR><TR><TD>users.txt</TD><TD>1</TD></TR><TR><TD>bin</TD><TD>1</TD></TR></TABLE>>];
+    block_2 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 2</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>home</TD><TD>2</TD></TR><TR><TD>archivos</TD><TD>3</TD></TR></TABLE>>];
+    block_0 -> block_2;
+  }
+
+  subgraph cluster_inode_1 {
+    label="Bloques del Inodo 1 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_1 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 1</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>1</TD></TR><TR><TD>..</TD><TD>0</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_2 {
+    label="Bloques del Inodo 2 (Directorio)";
+    style=filled;
+    color=lightgrey;
+  }
+
+  subgraph cluster_inode_3 {
+    label="Bloques del Inodo 3 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_3 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 3</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>3</TD></TR><TR><TD>..</TD><TD>2</TD></TR><TR><TD>user</TD><TD>4</TD></TR><TR><TD>carpeta1</TD><TD>7</TD></TR></TABLE>>];
+    block_30 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 30</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>b1.txt</TD><TD>15</TD></TR></TABLE>>];
+    block_3 -> block_30;
+  }
+
+  subgraph cluster_inode_4 {
+    label="Bloques del Inodo 4 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_4 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 4</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>4</TD></TR><TR><TD>..</TD><TD>3</TD></TR><TR><TD>docs</TD><TD>5</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_5 {
+    label="Bloques del Inodo 5 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_5 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 5</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>5</TD></TR><TR><TD>..</TD><TD>4</TD></TR><TR><TD>usac</TD><TD>6</TD></TR><TR><TD>Tarea.txt</TD><TD>13</TD></TR></TABLE>>];
+    block_29 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 29</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>Tarea2.txt</TD><TD>14</TD></TR></TABLE>>];
+    block_5 -> block_29;
+  }
+
+  subgraph cluster_inode_6 {
+    label="Bloques del Inodo 6 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_6 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 6</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>6</TD></TR><TR><TD>..</TD><TD>5</TD></TR><TR><TD>archivos</TD><TD>16</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_7 {
+    label="Bloques del Inodo 7 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_7 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 7</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>7</TD></TR><TR><TD>..</TD><TD>3</TD></TR><TR><TD>carpeta2</TD><TD>9</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_8 {
+    label="Bloques del Inodo 8 (Archivo)";
+    style=filled;
+    color=lightgrey;
+  }
+
+  subgraph cluster_inode_9 {
+    label="Bloques del Inodo 9 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_9 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 9</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>9</TD></TR><TR><TD>..</TD><TD>7</TD></TR><TR><TD>carpeta3</TD><TD>10</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_10 {
+    label="Bloques del Inodo 10 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_10 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 10</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>10</TD></TR><TR><TD>..</TD><TD>9</TD></TR><TR><TD>carpeta4</TD><TD>11</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_11 {
+    label="Bloques del Inodo 11 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_11 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 11</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>11</TD></TR><TR><TD>..</TD><TD>10</TD></TR><TR><TD>carpeta5</TD><TD>12</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_12 {
+    label="Bloques del Inodo 12 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_12 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 12</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>12</TD></TR><TR><TD>..</TD><TD>11</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_13 {
+    label="Bloques del Inodo 13 (Archivo)";
+    style=filled;
+    color=lightgrey;
+    block_13 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 13</B></TD></TR><TR><TD ALIGN="LEFT">0123456789012345678901234567890123456789012345678901234567890123</TD></TR></TABLE>>];
+    block_14 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 14</B></TD></TR><TR><TD ALIGN="LEFT">45678901234</TD></TR></TABLE>>];
+    block_13 -> block_14;
+  }
+
+  subgraph cluster_inode_14 {
+    label="Bloques del Inodo 14 (Archivo)";
+    style=filled;
+    color=lightgrey;
+    block_15 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 15</B></TD></TR><TR><TD ALIGN="LEFT">0123456789012345678901234567890123456789012345678901234567890123</TD></TR></TABLE>>];
+    block_17 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 17</B></TD></TR><TR><TD ALIGN="LEFT">4567890123456789012345678901234567890123456789012345678901234567</TD></TR></TABLE>>];
+    block_15 -> block_17;
+    block_18 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 18</B></TD></TR><TR><TD ALIGN="LEFT">8901234567890123456789012345678901234567890123456789012345678901</TD></TR></TABLE>>];
+    block_17 -> block_18;
+    block_19 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 19</B></TD></TR><TR><TD ALIGN="LEFT">2345678901234567890123456789012345678901234567890123456789012345</TD></TR></TABLE>>];
+    block_18 -> block_19;
+    block_20 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 20</B></TD></TR><TR><TD ALIGN="LEFT">6789012345678901234567890123456789012345678901234567890123456789</TD></TR></TABLE>>];
+    block_19 -> block_20;
+    block_21 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 21</B></TD></TR><TR><TD ALIGN="LEFT">0123456789012345678901234567890123456789012345678901234567890123</TD></TR></TABLE>>];
+    block_20 -> block_21;
+    block_22 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 22</B></TD></TR><TR><TD ALIGN="LEFT">4567890123456789012345678901234567890123456789012345678901234567</TD></TR></TABLE>>];
+    block_21 -> block_22;
+    block_23 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 23</B></TD></TR><TR><TD ALIGN="LEFT">8901234567890123456789012345678901234567890123456789012345678901</TD></TR></TABLE>>];
+    block_22 -> block_23;
+    block_25 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 25</B></TD></TR><TR><TD ALIGN="LEFT">2345678901234567890123456789012345678901234567890123456789012345</TD></TR></TABLE>>];
+    block_23 -> block_25;
+    block_26 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 26</B></TD></TR><TR><TD ALIGN="LEFT">6789012345678901234567890123456789012345678901234567890123456789</TD></TR></TABLE>>];
+    block_25 -> block_26;
+    block_27 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 27</B></TD></TR><TR><TD ALIGN="LEFT">0123456789012345678901234567890123456789012345678901234567890123</TD></TR></TABLE>>];
+    block_26 -> block_27;
+    block_28 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#F5DEB3"><TR><TD BGCOLOR="#F39C12"><B>Bloque Archivo 28</B></TD></TR><TR><TD ALIGN="LEFT">4567890123456789012345678901234567890123456789012345678901234567</TD></TR></TABLE>>];
+    block_27 -> block_28;
+  }
+
+  subgraph cluster_inode_15 {
+    label="Bloques del Inodo 15 (Archivo)";
+    style=filled;
+    color=lightgrey;
+  }
+
+  subgraph cluster_inode_16 {
+    label="Bloques del Inodo 16 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_31 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 31</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>16</TD></TR><TR><TD>..</TD><TD>6</TD></TR><TR><TD>proyectos</TD><TD>17</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_17 {
+    label="Bloques del Inodo 17 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_33 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 33</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>17</TD></TR><TR><TD>..</TD><TD>16</TD></TR><TR><TD>fase1</TD><TD>18</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_18 {
+    label="Bloques del Inodo 18 (Directorio)";
+    style=filled;
+    color=lightgrey;
+    block_34 [label=<
+    <TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" BGCOLOR="#C1FFC1"><TR><TD COLSPAN="2" BGCOLOR="#2ECC71"><B>Bloque Carpeta 34</B></TD></TR><TR><TD><B>Nombre</B></TD><TD><B>Inodo</B></TD></TR><TR><TD>.</TD><TD>18</TD></TR><TR><TD>..</TD><TD>17</TD></TR><TR><TD>entrada.txt</TD><TD>19</TD></TR></TABLE>>];
+  }
+
+  subgraph cluster_inode_19 {
+    label="Bloques del Inodo 19 (Archivo)";
+    style=filled;
+    color=lightgrey;
+  }
+
+}

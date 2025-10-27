@@ -1,0 +1,5 @@
+/* Tailwind v4 */
+@import "tailwindcss";
+
+/* tus estilos opcionales debajo */
+:root { --bg:#080302; --panel:#f06000; }
